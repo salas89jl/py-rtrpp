@@ -179,3 +179,27 @@ cython_debug/
 #  refer to https://docs.cursor.com/context/ignore-files
 .cursorignore
 .cursorindexingignore
+
+# macOS
+.DS_Store
+
+# VS Code
+.vscode/
+
+# Logs
+*.log
+logs/
+
+# LiDAR Datasets
+datasets/KITTI/
+
+# Generated Outputs
+outputs/videos/
+outputs/logs/
+outputs/screenshots/
+
+# ROS
+install/
+build/
+log/
+
