@@ -1,6 +1,6 @@
 Date: 06/30/2026
 
-Version: 1.0
+Version: 1.1
 
 Objective:
 
@@ -37,6 +37,7 @@ Lessons Learned
 - The importance of modularity and maintainability in software development. A well-structured project is easier to understand, modify, and extend.
 - The value of version control and collaboration tools like GitHub. It allows for better tracking of changes, collaboration with others, and sharing of the project with the community.
 - Documentation is crucial for the usability and adoption of the project. Clear and comprehensive records of the all actions taken during the development process, as well as usage instructions, are essential for users to understand and effectively use the platform.
+- Large architectural changes should be completed while the project is still in its early stages. Refactoring and restructuring becomes significantly more difficult as the project grows and additional features and dependencies are added. 
   
 Future Improvements
 - Update the README file with detailed usage instructions, examples, and explanations of the different modules and their functionalities.
