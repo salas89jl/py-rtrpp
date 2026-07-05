@@ -78,3 +78,4 @@ The Data Type describes the type of incoming data response packet. The type of d
 |GET_HEALTH | 0x52 | None | Single Request-Response | Get the RPLIDAR's device health status. | all |
 |GET_SAMPLERATE | 0x59 | None | Single Request-Response | Get the RPLIDAR's current sampling rate. | all |
 |GET_LIDAR_CONF | 0x84 | None | Single Request-Response | Get the RPLIDAR's configuration information. | 1.24 |
+
