@@ -2,7 +2,7 @@
 
 
 
-from rtrpp.sensors.rplidar.transport import RPLidarTransport
+from sensors.rplidar.transport import RPLidarTransport
 
 
 

@@ -49,7 +49,7 @@ class RPLidarTransport:
         
         return self.serial_connection.read(size)
 
-    def write(self, data: bytes) -> int:
+    def write(self, data: bytes) -> bytes:
         """ Writes data to the RPLidar device. """
         if not self.is_open:
             raise RuntimeError("Serial connection is not open.")
