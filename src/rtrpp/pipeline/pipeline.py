@@ -1,6 +1,8 @@
-from src.io.loading import load_point_cloud
-from src.preprocessing import outlier_filter, roi_filter, voxel_filter
-from src.segmentation import dbscan_cluster, segment_ground
+from rtrpp.preprocessing import outlier_filter, roi_filter
+from rtrpp.segmentation import dbscan_cluster
+from rtrpp.io.loading import load_point_cloud
+from rtrpp.preprocessing import voxel_filter
+from rtrpp.segmentation import segment_ground
 
 def run_pipeline(file_path):
     """

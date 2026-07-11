@@ -2,12 +2,12 @@
 
 
 
-from sensors.rplidar.transport import RPLidarTransport
+from rtrpp.sensors.rplidar.transport import RPLidarTransport
 
 
 
 def main():
-    port = "/dev/tty.usbserial-10"  # Replace with your RPLidar port
+    port = ""  # Replace with your RPLidar port
     lidar = RPLidarTransport(port)
 
     try:

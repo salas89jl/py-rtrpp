@@ -1,9 +1,9 @@
 import open3d as o3d
 from pathlib import Path
-from src.pipeline.pipeline import run_pipeline
-from src.tracking import tracking
-from src.tracking.detection import detected_bounding_boxes
-from src.visualization.open3d_viewer import animate_frames_with_boxes
+from rtrpp.pipeline.pipeline import run_pipeline
+from rtrpp.tracking import tracking
+from rtrpp.tracking.detection import detected_bounding_boxes
+from rtrpp.visualization.open3d_viewer import animate_frames_with_boxes
 
 
 def run_offline_lidar_pipeline(module_path):

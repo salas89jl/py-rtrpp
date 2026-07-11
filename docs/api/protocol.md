@@ -3,12 +3,11 @@
 The purpose of the Protocol layer is to define the communication protocol between the RPLIDAR device and the host system. 
 
 ## Responsibilities
-It is responsible for defining command bytes, descriptor structures, constant values, enums, and packet layouts used in the communication process. 
+The protocol layer is responsible for decoding binary response packet fields and constructing request packets. Additionally, it is responsible for defining command bytes, descriptor structures, constant values, enums, and packet layouts used in the communication process. 
 
 It is not responsible for the following:
 - Serial port communication (handled by the Transport layer)
 - Read or write bytes to the RPLIDAR device (handled by the Transport layer)
-- Interpreting or processing scan data (handled by the Driver layer)
 - Managing device state or configuration (handled by the Driver layer)
 - Converting scan data to point clouds or other formats (handled by the Driver layer)
 - Visualizing or displaying scan data (handled by the Driver layer)
@@ -39,7 +38,7 @@ Note: The little-endian format means that the least significant byte is stored f
 | Command | Value | Payload | Response Mode | Timeout | Operation |
 |---------|-------|---------|----------------|---------|-----------|
 | SCAN | 0x20 | N/A | Multiple Response | 5 seconds | Starts scanning and returns scan data. |
-| EXPRESS_SCAN | 0x82 | N/A | Multiple Response | 5 seconds | Enters scanning state and operates at highest speed. |
+| EXPRESS_SCAN | 0x82 | Yes | Multiple Response | 5 seconds | Enters scanning state and operates at highest speed. |
 | FORCE_SCAN | 0x21 | N/A | Multiple Response | 5 seconds | Enters scanning state and forces data output w/o checking rotation speed. |
 
 #### __Single Response Requests__:
@@ -48,7 +47,7 @@ Note: The little-endian format means that the least significant byte is stored f
 | GET_INFO | 0x50 | N/A | Single Response | 5 seconds | Retrieves device information. |
 | GET_HEALTH | 0x52 | N/A | Single Response | 5 seconds | Retrieves device health status. |
 | GET_SAMPLERATE | 0x59 | N/A | Single Response | 5 seconds | Retrieves device sample rate. |
-| GET_LIDAR_CONF | 0x84 | N/A | Single Response | 5 seconds | Retrieves device configuration. |
+| GET_LIDAR_CONF | 0x84 | Yes | Single Response | 5 seconds | Retrieves device configuration. |
 
 
 ### Request Building
@@ -67,6 +66,14 @@ Transmission order: SYNC_BYTE -> SYNC_BYTE_RESPONSE -> DATA_LENGTH -> SEND_MODE 
 Send mode is a 2-bit field that indicates the mode of data transmission. The possible values are:
 - 0x0: Single Request - Single Reponse mode. The device will send a single response packet for the request.
 - 0x1: Single Request - Multiple Response mode. The device will continuously send out multiple response packets with the same format for the current session.
+
+
+Data type is a 1-byte field that indicates the type of data being sent in the response. The possible values are:
+- 0x81: Measurement data response. 
+- 0x82: Express measurement data response.
+- 0x84: Extended/Dense measurement data response.
+- 0x04: Device information response.
+- 0x06: Device health response.
 
 ### Parsing Workflow
 The general workflow for parsing a response descriptor packet is as follows:
@@ -156,6 +163,29 @@ Byte 4: payload[0]    ⎤
 ...                   ⎪ - option specific data
 Byte n+4: payload[n]  ⎦
 
+
+|Field Name | Description | Notes |
+|-----------|-------------|-------|
+| type | Configuration type | This is the same 'type' value as in the request packet. |
+| payload[n] | Configuration value | Refer to definition of configuration entry for the specific formate and length of the payload data. |
+
+| Type | Description | Payload Size |
+|------|-------------|--------------|
+| uint8 | 8-bit unsigned integer | 1 byte |
+| uint16 | 16-bit unsigned integer | 2 bytes |
+| uint32 | 32-bit unsigned integer | 4 bytes |
+| uint64 | 64-bit unsigned integer | 8 bytes |
+| sint8 | 8-bit signed integer | 1 byte |
+| sint16 | 16-bit signed integer | 2 bytes |
+| sint32 | 32-bit signed integer | 4 bytes |
+| sint64 | 64-bit signed integer | 8 bytes |
+| string | UTF-8 encodeding (ended with 0, and no BOM Header) | Variable length |
+| float | 32-bit floating point number | 4 bytes |
+| double | 64-bit floating point number | 8 bytes |
+
+Configuration type values: (To be filled in with specific configuration types and their corresponding payload sizes and descriptions.)
+
+
 ### Timing Requirements
 
 | Command | Timeout |
@@ -182,7 +212,7 @@ Byte n+4: payload[n]  ⎦
 | `parse_get_info_response` | function | Function that decodes the raw device information data received from the RPLIDAR device using GET_INFO request into a structured format. |
 | `parse_get_health_response` | function | Function that decodes the raw device health data received from the RPLIDAR device using GET_HEALTH request into a structured format. |
 | `parse_get_samplerate_response` | function | Function that decodes the raw device sample rate data received from the RPLIDAR device using GET_SAMPLERATE request into a structured format. |
-| `parse_get_lidar_conf_response` | function | Function that decodes the raw device configuration data received from the RPLIDAR device using GET_LIDAR_CONF request into a structured format. |
+<!-- | `parse_get_lidar_conf_response` | function | Function that decodes the raw device configuration data received from the RPLIDAR device using GET_LIDAR_CONF request into a structured format. | -->
 
 
 ## Class Diagram
@@ -235,8 +265,8 @@ classDiagram
     class RPLidarGetInfoData {
         <<dataclass>>
         +int model
-        +int firmware_major
         +int firmware_minor
+        +int firmware_major
         +int hardware_version
         +bytes serial_number
     }
@@ -270,13 +300,13 @@ classDiagram
 - `RPLidarRequest` raises `ValueError` if the command is not an instance of `RPLidarCommand`.
 - `RPLidarRequest` raises `ValueError` if the payload size exceeds 255 bytes.
 - `build_request()` raises `ValueError` if the command is not an instance of `RPLidarCommand`.
-- `parse_response_descriptor()` raises `ValueError` if the correct start flags are not present in the response descriptor packet.
+- `parse_response_descriptor()` raises `ValueError` if the correct start flags are not present in the response descriptor packet. Or if the response descriptor packet is not the correct length. Or if the send mode is not valid. Or if the data length is not valid. Or if the data type is not valid.
 - `parse_scan_data()` raises `ValueError` if the input data size is not 5 bytes or if the start flag and inverse start flag are not valid or if the check bit is not valid.
 - `parse_get_info_response()` raises `ValueError` if the input data size is not 20 bytes.
 - `parse_get_health_response()` raises `ValueError` if the input data size is not 3 bytes.
 - `parse_get_samplerate_response()` raises `ValueError` if the input data size is not 4 bytes
-- `parse_get_lidar_conf_response()` raises `ValueError` if the input data size is less than 4 bytes or if the payload size exceeds the maximum allowed size of 255 bytes.
-
+<!-- - `parse_get_lidar_conf_response()` raises `ValueError` if the input data size is less than 4 bytes or if the payload size exceeds the maximum allowed size of 255 bytes. -->
+  
 ## Usage Example
 ```python
 from rtrpp.sensors.rplidar.protocol import RPLidarCommand, build_request, parse_scan_data

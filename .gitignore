@@ -129,6 +129,7 @@ celerybeat.pid
 
 # Environments
 .env
+.env.*
 .venv
 env/
 venv/
@@ -190,6 +191,11 @@ cython_debug/
 *.log
 logs/
 
+
+########################################################
+#            Project-specific                          #
+########################################################
+
 # LiDAR Datasets
 datasets/KITTI/
 
@@ -197,9 +203,13 @@ datasets/KITTI/
 outputs/videos/
 outputs/logs/
 outputs/screenshots/
+outputs/pcd
 
 # ROS
 install/
-build/
 log/
+
+# Runtime configuration
+*.bak
+*.tmp
 

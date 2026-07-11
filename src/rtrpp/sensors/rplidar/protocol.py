@@ -30,11 +30,36 @@ COMMAND_TIMEOUT = {
     RPLidarCommand.GET_LIDAR_CONF: 5.0
 }
 
+class RPLidarResponseType(Enum):
+    """ Response Descriptor Data Type List. """
+
+    # Scanning Data Types
+    SCAN = 0x81
+    SCAN_EXPRESS_LEGACY = 0x82
+    SCAN_EXPRESS_EXTENDED = 0x84
+    SCAN_EXPRESS_DENSE = 0x85
+    FORCE_SCAN = 0x81
+
+    # Info & Health Types
+    GET_INFO = 0x04
+    GET_HEALTH = 0x06
+    GET_SAMPLERATE = 0x15
+    GET_LIDAR_CONF = 0x20
+
+class RPLidarResponseLength(Enum):
+    SCAN = 0x40
+    EXPRESS_SCAN = 0x40
+    FORCE_SCAN = 0x40
+    GET_INFO = 0x00
+    GET_HEALTH = 0x00
+    GET_SAMPLERATE = 0x00
+    GET_LIDAR_CONF = 0x00
+
 @dataclass(frozen=True)
 class RPLidarRequest:
     """ Represents a command request packet that is converted to bytes to be sent to the RPLIDAR device. """
     command: int
-    payload: bytes
+    payload: bytes | None = None
 
     def to_bytes(self) -> bytes:
         if self.payload:
@@ -60,6 +85,7 @@ class RPLidarResponseDescriptor:
     data_type: int
 
 
+
 @dataclass(frozen=True)
 class RPLidarScanData:
     """ Represents a scan data packet that is parsed from bytes received from the RPLIDAR device in SCAN mode. """
@@ -72,8 +98,8 @@ class RPLidarScanData:
 class RPLidarGetInfoData:
     """ Represents a response packet that is parsed from bytes received from the RPLIDAR device in GET_INFO mode. """
     model: int
-    firmware_version_major: int
     firmware_version_minor: int
+    firmware_version_major: int
     hardware_version: int
     serial_number: bytes
 
@@ -84,7 +110,7 @@ class RPLidarGetHealthData:
     error_code: int
 
 @dataclass(frozen=True)
-class RPLidarGet_SamplerateData:
+class RPLidarGetSamplerateData:
     """ Represents a response packet that is parse from bytes received from the RPLIDAR device in GET_HEALTH mode. """
     t_standard: int
     t_express: int
@@ -95,12 +121,16 @@ class RPLidarGetLidarConfData:
     config_type: int
     payload: bytes
 
-# Helper functions
 
+# Helper functions
 def build_request(command: RPLidarCommand, payload: bytes = b'') -> bytes:
     """ Builds a request byte for the driver to send to the lidar device. """
     if not isinstance(command, RPLidarCommand):
         raise ValueError("Invalid command type. Must be an instance of RPLidarCommand.")
+    
+    if len(payload) > 255:
+        raise ValueError("Invalid payload size. Must not exceed 255 bytes")
+    
     return RPLidarRequest(command.value, payload).to_bytes()
 
 def parse_response_descriptor(packet: bytes)-> RPLidarResponseDescriptor:
@@ -116,6 +146,10 @@ def parse_response_descriptor(packet: bytes)-> RPLidarResponseDescriptor:
 
     data_length = raw_length_mode & 0x3FFFFFFF # Mask to get the lower 30 bits for data length
     send_mode = (raw_length_mode >> 30) & 0x03 # Mask to get the upper 2 bits for send mode
+
+    if send_mode not in (0,1):
+        raise ValueError(f"Invalid Send Mode: {send_mode}")
+
     data_type = b6 
 
     return RPLidarResponseDescriptor(
@@ -165,8 +199,8 @@ def parse_get_info_response(packet: bytes) -> RPLidarGetInfoData:
 
     return RPLidarGetInfoData(
         model=model,
-        firmware_version_major=firmware_version_major,
         firmware_version_minor=firmware_version_minor,
+        firmware_version_major=firmware_version_major,
         hardware_version=hardware_version,
         serial_number=serial_number  
     )
@@ -176,47 +210,65 @@ def parse_get_health_response(packet: bytes) -> RPLidarGetHealthData:
 
     if len(packet) != 3:
         raise ValueError("GET_HEALTH response packet must be exactly 3 bytes. ")
-    
+
     status = packet[0]
-    error_code = packet[1:3]
+
+    if status not in (0, 1, 2):
+        raise ValueError(f"Invalid GET_HEALTH status: {status}")
+    error_code = int.from_bytes(
+        packet[1:3], 
+        byteorder="little"
+    )
 
     return RPLidarGetHealthData(
         status=status,
         error_code=error_code
     )
 
-def parse_get_samplerate_response(packet: bytes) -> RPLidarGet_SamplerateData:
+def parse_get_samplerate_response(packet: bytes) -> RPLidarGetSamplerateData:
     """ Parse the raw GET_SAMPLERATE response data received from the RPLIDAR device. """
 
     if len(packet) != 4:
         raise ValueError("GET_SAMPLERATE response packet must be exactly 4 bytes. ")
     
-    t_standard = packet[0:1]
-    t_express = packet[2:3]
+    t_standard = int.from_bytes(
+        packet[0:2],
+        byteorder="little"
+    )
 
-    return RPLidarGet_SamplerateData(
+    t_express = int.from_bytes(
+        packet[2:4], 
+        byteorder="little"
+    )
+
+    return RPLidarGetSamplerateData(
         t_standard=t_standard,
         t_express=t_express
     )
+# *** Under Construction ***
+# GET_LIDAR_CONF returns completely different data structures
+# depending on the type_id. This feature(s) will be implemented
+# after implementation of driver layer.
 
-def parse_get_lidar_conf_response(packet: bytes) -> RPLidarGetLidarConfData:
-    """ Parse the raw GET_LIDAR_CONF response data from the RPLIDAR device. Payload field size is defined by each specific configuration type """
+# def parse_get_lidar_conf_response(packet: bytes) -> RPLidarGetLidarConfData:
+#     """ Parse the raw GET_LIDAR_CONF response data from the RPLIDAR device. Payload field size is defined by each specific configuration type """
     
-    if len(packet) < 4:
-        raise ValueError("GET_LIDAR_CONF response packet must be at least 4 bytes. ")
+#     if len(packet) < 4:
+#         raise ValueError("GET_LIDAR_CONF response packet must be at least 4 bytes. ")
   
-    config_type = (
-        packet[0]
-        | (packet[1] << 8)
-        | (packet[2] << 16)
-        | (packet[3] << 24)
-    )
+#     config_type = (
+#         packet[0]
+#         | (packet[1] << 8)
+#         | (packet[2] << 16)
+#         | (packet[3] << 24)
+#     )
 
-    payload = packet[4:]
+#     payload = packet[4:]
 
-    if len(payload) > 255:
-        raise ValueError("GET_LIDAR_CONF payload cannot exceed 255 bytes. ")
-    return RPLidarGetLidarConfData(
-        config_type=config_type,
-        payload=payload
-    )
+#     if len(payload) > 255:
+#         raise ValueError("GET_LIDAR_CONF payload cannot exceed 255 bytes. ")
+    
+#     return RPLidarGetLidarConfData(
+#         config_type=config_type,
+#         payload=payload
+#     )

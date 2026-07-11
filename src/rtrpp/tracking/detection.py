@@ -1,8 +1,8 @@
 import numpy as np
 import open3d as o3d
 
-from src.segmentation.object_classification import simple_classification
-from src.segmentation.bounding_box import compute_bounding_box
+from rtrpp.segmentation.object_classification import simple_classification
+from rtrpp.segmentation.bounding_box import compute_bounding_box
 
 class Detection:
 

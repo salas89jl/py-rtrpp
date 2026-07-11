@@ -1,5 +1,5 @@
 import numpy as np
-from src.tracking.track import Track
+from rtrpp.tracking.track import Track
         
 class SimpleTracker:
     # Constructor
