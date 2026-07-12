@@ -25,7 +25,16 @@ Milestone 4
 □ Visualization Layer
 □ Visualization Tests 
 
+### Concurrent Data Pipeline
 
+- [ ] Establish correct single-threaded streaming
+- [ ] Add background acquisition worker
+- [ ] Add bounded scan queue
+- [ ] Add shutdown event
+- [ ] Propagate worker exceptions
+- [ ] Define queue overflow policy
+- [ ] Measure acquisition and processing rates
+- [ ] Evaluate multiprocessing if processing falls behind
 
 □ Incomplete
 → In Progress

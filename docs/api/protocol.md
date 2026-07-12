@@ -14,6 +14,8 @@ It is not responsible for the following:
   
 It defines protocol constants and provides helpers for constructing command bytes and interpreting protocol structures.
 
+## Request and Response Packet Structure
+
 ### Request Packets
 All request packets sent to the RPLIDAR device follow a specific structure (Little Endian format):
 
@@ -90,7 +92,6 @@ The general workflow for parsing a response descriptor packet is as follows:
 There are no common formats and packet length for data packets, as they are dependent on the command. 
 
 __SCAN Request and Response__
-
 Request Packet: |A5|20|
 Response Descriptor: |A5|5A|05|00|00|40|81|
 Response Mode: __Multiple__
@@ -202,7 +203,11 @@ Configuration type values: (To be filled in with specific configuration types an
 |------|------|-------------|
 | `SYNC_BYTE` | constant | Request start byte. |
 | `SYNC_BYTE_RESPONSE` | constant | Response start byte. |
+| `COMMAND_TIMEOUTS` | dict | Dictionary mapping RPLIDAR commands to their respective timeout values. |
 | `RPLidarCommand` | enum | Named command values for RPLIDAR commands. |
+| `RPLidarResponseType` | enum | Named response type values for RPLIDAR responses. |
+| `RPLidarSendMode` | enum | Named send mode values for RPLIDAR responses. |
+| `RPLidarHealthStatus` | enum | Named health status values for RPLIDAR device health. |
 | `RPLidarRequest` | dataclass | Represents a command request packet that is converted to bytes to be sent to the RPLIDAR device. |
 | `RPLidarResponseDescriptor` | dataclass | Represents a response descriptor packet that is parsed from bytes received from the RPLIDAR device. |
 | `RPLidarScanData` | dataclass | Represents a 5 byte data packet that is parsed from bytes received from the RPLIDAR device in SCAN mode. |
@@ -230,6 +235,38 @@ classDiagram
         +GET_HEALTH = 0x52
         +GET_SAMPLERATE = 0x59
         +GET_LIDAR_CONF = 0x84
+    }
+```
+```mermaid
+classDiagram
+    class RPLidarResponseType {
+        <<enum>>
+        +MEASUREMENT_DATA = 0x81
+        +EXPRESS_MEASUREMENT_DATA = 0x82
+        +EXTENDED_MEASUREMENT_DATA = 0x84
+        +DENSE_MEASUREMENT_DATA = 0x85
+        +DEVICE_INFO = 0x04
+        +DEVICE_HEALTH = 0x06
+        +DEVICE_SAMPLERATE = 0x15
+        +DEVICE_LIDAR_CONF = 0x20
+    }
+
+```
+```mermaid
+classDiagram
+    class RPLidarSendMode {
+        <<enum>>
+        +SINGLE_RESPONSE = 0x0
+        +MULTIPLE_RESPONSE = 0x1
+    }
+```
+```mermaid
+classDiagram
+    class RPLidarHealthStatus {
+        <<enum>>
+        +GOOD = 0
+        +WARNING = 1
+        +ERROR = 2
     }
 ```
 ```mermaid
@@ -300,10 +337,17 @@ classDiagram
 - `RPLidarRequest` raises `ValueError` if the command is not an instance of `RPLidarCommand`.
 - `RPLidarRequest` raises `ValueError` if the payload size exceeds 255 bytes.
 - `build_request()` raises `ValueError` if the command is not an instance of `RPLidarCommand`.
-- `parse_response_descriptor()` raises `ValueError` if the correct start flags are not present in the response descriptor packet. Or if the response descriptor packet is not the correct length. Or if the send mode is not valid. Or if the data length is not valid. Or if the data type is not valid.
-- `parse_scan_data()` raises `ValueError` if the input data size is not 5 bytes or if the start flag and inverse start flag are not valid or if the check bit is not valid.
+- `parse_response_descriptor()` raises `ValueError` if the correct start flags are not present in the response descriptor packet. 
+- `parse_response_descriptor()` raises `ValueError` if the response descriptor packet size is not 7 bytes.
+- `parse_response_descriptor()` raises `ValueError` if the send mode is not valid.
+- `parse_response_descriptor()` raises `ValueError` if the data length is not valid.
+- `parse_response_descriptor()` raises `ValueError` if the data type is not valid.
+- `parse_scan_data()` raises `ValueError` if the input data size is not 5 bytes.
+- `parse_scan_data()` raises `ValueError` if the start flag and inverse start flag are not valid.
+- `parse_scan_data()` raises `ValueError` if the check bit is not valid.
 - `parse_get_info_response()` raises `ValueError` if the input data size is not 20 bytes.
 - `parse_get_health_response()` raises `ValueError` if the input data size is not 3 bytes.
+- `parse_get_health_response()` raises `ValueError` if the status value is not valid.
 - `parse_get_samplerate_response()` raises `ValueError` if the input data size is not 4 bytes
 <!-- - `parse_get_lidar_conf_response()` raises `ValueError` if the input data size is less than 4 bytes or if the payload size exceeds the maximum allowed size of 255 bytes. -->
   

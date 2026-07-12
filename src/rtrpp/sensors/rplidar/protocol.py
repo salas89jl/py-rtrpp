@@ -18,7 +18,7 @@ class RPLidarCommand(Enum):
     GET_LIDAR_CONF = 0x84
 
 # Time specifications for RPLIDAR requests. 
-COMMAND_TIMEOUT = {
+COMMAND_TIMEOUTS = {
     RPLidarCommand.STOP: 0.001, 
     RPLidarCommand.RESET: 0.002,
     RPLidarCommand.SCAN: 5.0,
@@ -34,26 +34,28 @@ class RPLidarResponseType(Enum):
     """ Response Descriptor Data Type List. """
 
     # Scanning Data Types
-    SCAN = 0x81
-    SCAN_EXPRESS_LEGACY = 0x82
-    SCAN_EXPRESS_EXTENDED = 0x84
-    SCAN_EXPRESS_DENSE = 0x85
-    FORCE_SCAN = 0x81
+    MEASUREMENT_DATA = 0x81
+    EXPRESS_MEASUREMENT_DATA = 0x82
+    EXTENDED_MEASUREMENT_DATA = 0x84
+    DENSE_MEASUREMENT_DATA = 0x85
 
     # Info & Health Types
-    GET_INFO = 0x04
-    GET_HEALTH = 0x06
-    GET_SAMPLERATE = 0x15
-    GET_LIDAR_CONF = 0x20
+    DEVICE_INFO = 0x04
+    DEVICE_HEALTH = 0x06
+    DEVICE_SAMPLERATE = 0x15
+    DEVICE_LIDAR_CONF = 0x20
 
-class RPLidarResponseLength(Enum):
-    SCAN = 0x40
-    EXPRESS_SCAN = 0x40
-    FORCE_SCAN = 0x40
-    GET_INFO = 0x00
-    GET_HEALTH = 0x00
-    GET_SAMPLERATE = 0x00
-    GET_LIDAR_CONF = 0x00
+class RPLidarSendMode(Enum):
+    """  Named send mode values for RPLIDAR responses. """
+    SINGLE_RESPONSE = 0x0
+    MULTIPLE_RESPONSE = 0x1
+
+class RPLidarHealthStatus(Enum):
+    """ Named health status values for RPLIDAR device health. """
+
+    GOOD = 0
+    WARNING = 1
+    ERROR = 2
 
 @dataclass(frozen=True)
 class RPLidarRequest:
@@ -76,15 +78,12 @@ class RPLidarRequest:
             checksum ^= byte
         return checksum & 0xFF
     
-
 @dataclass(frozen=True)
 class RPLidarResponseDescriptor:
     """ Represents a response descriptor packet that is parsed from bytes received from the RPLIDAR device. """
     data_length: int
     send_mode: int
     data_type: int
-
-
 
 @dataclass(frozen=True)
 class RPLidarScanData:
@@ -147,10 +146,13 @@ def parse_response_descriptor(packet: bytes)-> RPLidarResponseDescriptor:
     data_length = raw_length_mode & 0x3FFFFFFF # Mask to get the lower 30 bits for data length
     send_mode = (raw_length_mode >> 30) & 0x03 # Mask to get the upper 2 bits for send mode
 
-    if send_mode not in (0,1):
+    if not any(mode.value == send_mode for mode in RPLidarSendMode):
         raise ValueError(f"Invalid Send Mode: {send_mode}")
 
     data_type = b6 
+
+    if not any(item.value == data_type for item in RPLidarResponseType):
+        raise ValueError(f"Invalid Data Type: {data_type}")
 
     return RPLidarResponseDescriptor(
         data_length=data_length,
@@ -213,8 +215,9 @@ def parse_get_health_response(packet: bytes) -> RPLidarGetHealthData:
 
     status = packet[0]
 
-    if status not in (0, 1, 2):
+    if not any(item.value == status for item in RPLidarHealthStatus):
         raise ValueError(f"Invalid GET_HEALTH status: {status}")
+    
     error_code = int.from_bytes(
         packet[1:3], 
         byteorder="little"
