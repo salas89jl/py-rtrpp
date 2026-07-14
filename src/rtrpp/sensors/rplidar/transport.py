@@ -35,7 +35,7 @@ class RPLidarTransport:
     def close(self) -> None:
         """
         Closes the serial connection to the RPLidar device.
-        """
+        """ 
         if self.serial_connection and self.serial_connection.is_open:
             self.serial_connection.close()
 
@@ -46,7 +46,8 @@ class RPLidarTransport:
         :param size: The number of bytes to read.
         :return: The bytes read from the device.
         """
-        
+        if not self.is_open:
+            raise RuntimeError("Serial connection is not open.")
         return self.serial_connection.read(size)
 
     def write(self, data: bytes) -> bytes:

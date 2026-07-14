@@ -57,6 +57,20 @@ class RPLidarHealthStatus(Enum):
     WARNING = 1
     ERROR = 2
 
+class RPLidarDataLength(Enum):
+    """ Named data length values for RPLIDAR response packets. """
+
+    # Scanning Data Lengths
+    SCAN_DATA = 5
+    EXPRESS_DATA = 84
+    EXTENDED_DATA = 132
+    DENSE_DATA = 84
+
+    # Info & Health Data Lengths
+    GET_INFO = 20
+    GET_HEALTH = 3
+    GET_SAMPLERATE = 4
+
 @dataclass(frozen=True)
 class RPLidarRequest:
     """ Represents a command request packet that is converted to bytes to be sent to the RPLIDAR device. """

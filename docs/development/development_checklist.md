@@ -11,6 +11,13 @@ Milestone 1
 
 Milestone 2
 □ Driver Layer
+    ✔ Implement get_info()
+    ✔ Implement get_health()
+    ✔ Implement get_samplerate()
+    ✔ Implement stop()
+    ✔ Implement reset()
+    □ Implement start_scan()
+
 □ Driver Tests
 □ Hardware Integration
 □ Documentation
