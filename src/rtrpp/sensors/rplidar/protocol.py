@@ -25,9 +25,7 @@ class RPLidarCommand(Enum):
     GET_LIDAR_CONF = 0x84
 
 # Time specifications for RPLIDAR requests. 
-COMMAND_TIMEOUTS = {
-    RPLidarCommand.STOP: 0.001, 
-    RPLidarCommand.RESET: 0.002,
+COMMAND_DELAYS = {
     RPLidarCommand.SCAN: 5.0,
     RPLidarCommand.EXPRESS_SCAN: 5.0,
     RPLidarCommand.FORCE_SCAN: 5.0,
@@ -35,6 +33,11 @@ COMMAND_TIMEOUTS = {
     RPLidarCommand.GET_HEALTH: 5.0,
     RPLidarCommand.GET_SAMPLERATE: 5.0,
     RPLidarCommand.GET_LIDAR_CONF: 5.0
+}
+
+POST_COMMAND_DELAYS = {
+    RPLidarCommand.STOP: 0.001,
+    RPLidarCommand.RESET: 0.002
 }
 
 class RPLidarResponseType(Enum):

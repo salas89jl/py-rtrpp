@@ -1,6 +1,7 @@
 import pytest
 import serial
 
+from unittest.mock import patch
 from rtrpp.sensors.rplidar.driver import RPLidarDriver
 from rtrpp.sensors.rplidar.protocol import RPLidarCommand
 from rtrpp.sensors.rplidar.exceptions import (
@@ -518,6 +519,14 @@ def test_stop_connection_oserror_during_write():
 
     assert isinstance(exc_info.value.__cause__, OSError)
 
+@patch("rtrpp.sensors.rplidar.driver.time.sleep")
+def test_stop_waits_before_returning(mock_sleep):
+    transport = MockTransport()
+    driver = RPLidarDriver(transport)
+
+    driver.stop()
+
+    mock_sleep.assert_called_once_with(0.001)
 # Tests for reset helper function
 
 def test_reset_valid_write():
@@ -548,3 +557,12 @@ def test_reset_connection_oserror_during_write():
         driver.reset()
 
     assert isinstance(exc_info.value.__cause__, OSError)
+
+@patch("rtrpp.sensors.rplidar.driver.time.sleep")
+def test_reset_waits_before_returning(mock_sleep):
+    transport = MockTransport()
+    driver = RPLidarDriver(transport)
+
+    driver.reset()
+
+    mock_sleep.assert_called_once_with(0.002)

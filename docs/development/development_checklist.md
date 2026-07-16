@@ -47,12 +47,15 @@ High-level Driver
 __Milestone 3__
 Hardware Integration
 - [ ] Hardware Communication Verification
-  - [ ] Verify connection with RPLIDAR S2L
-  - [ ] Verify get_info()
-  - [ ] Verify get_health()
-  - [ ] Verify get_samplerate()
-  - [ ] Verify stop()
-  - [ ] Verify reset()
+  - [x] Serial port opened successfully
+  - [x] Verify `get_info()` returns plausible values
+  - [x] Verify `get_health()` reports a recognized status
+  - [x] Verify `get_samplerate()` return plausible timing values
+  - [x] Verify `stop()` completes without communication failure
+  - [x] Verify reset()
+  - [x] Verify transport closes even when command fails
+  - [x] Hardware results are recorded in documentation
+  - [x] Existing 75 unit tests pass with hardware connected
 - [ ] Driver Layer (w/ start_scan feature)
   - [ ] Implement start_scan()
   - [ ] Implement stop_scan()

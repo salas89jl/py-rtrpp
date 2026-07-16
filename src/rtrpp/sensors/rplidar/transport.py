@@ -39,6 +39,9 @@ class RPLidarTransport:
         if self.serial_connection and self.serial_connection.is_open:
             self.serial_connection.close()
 
+        if self.is_open:
+            raise RuntimeError("Serial connection failed to close. ")
+
     def read(self, size: int) -> bytes:
         """
         Reads a specified number of bytes from the RPLidar device.

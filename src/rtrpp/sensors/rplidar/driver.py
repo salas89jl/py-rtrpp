@@ -6,8 +6,8 @@ from .exceptions import (
     RPLidarTimeoutError
 )
 from . import protocol as prot
-
 import serial
+import time
 
 class RPLidarDriver:
     def __init__(self, transport: RPLidarTransport):
@@ -137,6 +137,7 @@ class RPLidarDriver:
 
         try: 
             self._send_request(prot.RPLidarCommand.STOP)
+            time.sleep(prot.POST_COMMAND_DELAYS[prot.RPLidarCommand.STOP])
 
         except (serial.SerialException, OSError, RuntimeError) as exc:
             raise RPLidarConnectionError(
@@ -148,6 +149,7 @@ class RPLidarDriver:
 
         try:
             self._send_request(prot.RPLidarCommand.RESET)
+            time.sleep(prot.POST_COMMAND_DELAYS[prot.RPLidarCommand.RESET])
 
         except (serial.SerialException, OSError, RuntimeError) as exc:
             raise RPLidarConnectionError(
