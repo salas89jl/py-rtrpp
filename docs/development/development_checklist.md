@@ -1,38 +1,101 @@
-Version 2.0
+# Version 2.0 Development Checklist
 
-Milestone 1
-✔ Transport Layer
-✔ Transport Tests
-✔ Protocol Layer
-✔ Protocol Tests
-✔ pyproject.toml
-✔ Package Structure
-✔ Documentation
+**Current milestone:** Milestone 3 – Hardware Integration
 
-Milestone 2
-□ Driver Layer
-    ✔ Implement get_info()
-    ✔ Implement get_health()
-    ✔ Implement get_samplerate()
-    ✔ Implement stop()
-    ✔ Implement reset()
-    □ Implement start_scan()
+**Current branch:** feature/rplidar-interface
 
-□ Driver Tests
-□ Hardware Integration
-□ Documentation
+**Latest milestone completed:** Milestone 2
 
-Milestone 3
-□ Live Data Processing
-□ Data Processing Tests
-□ Point Cloud Generation
-□ Point Cloud Tests
+**Unit tests:** 75 passing
 
-Milestone 4
-□ Visualization Layer
-□ Visualization Tests 
+__Milestone 1__
+Communication Foundation
+- [x] Transport Layer
+- [x]  Transport Tests
+- [x]  Protocol Layer
+- [x]  Protocol Tests
+- [x]  pyproject.toml
+- [x]  Package Structure
+- [x]  Documentation
 
-### Concurrent Data Pipeline
+__Milestone 2__
+High-level Driver
+- [x]  Driver Layer (w/o start_scan())
+  - [x]  Implement get_info()
+  - [x]  Implement get_health()
+  - [x]  Implement get_samplerate()
+  - [x]  Implement stop()
+  - [x]  Implement reset()
+- [x]  Driver Tests (w/o start_scan())
+  - [x]  Implement get_info() tests
+  - [x]  Implement get_health() tests
+  - [x]  Implement get_samplerate() tests
+  - [x]  Implement stop() tests
+  - [x]  Implement reset() tests
+- [x]  Exception hierarchy
+  - [x]  Implement RPLidarError (base exception)
+  - [x]  Implement RPLidarCommunicationError (communication error)
+  - [x]  Implement RPLidarProtocolError (protocol error)
+  - [x]  Implement RPLidarTimeoutError (timeout error)
+  - [x]  Implement RPLidarDeviceError (device error)
+- [x]  Documentation
+  - [x] Add driver layer documentation
+  - [x] Add driver layer tests documentation
+  - [x] Add exception hierarchy documentation
+
+
+__Milestone 3__
+Hardware Integration
+- [ ] Hardware Communication Verification
+  - [ ] Verify connection with RPLIDAR S2L
+  - [ ] Verify get_info()
+  - [ ] Verify get_health()
+  - [ ] Verify get_samplerate()
+  - [ ] Verify stop()
+  - [ ] Verify reset()
+- [ ] Driver Layer (w/ start_scan feature)
+  - [ ] Implement start_scan()
+  - [ ] Implement stop_scan()
+  - [ ] Verify continuous scan data acquisition
+- [ ] Driver Tests (w/ start_scan feature)
+  - [ ] Implement start_scan() tests
+  - [ ] Implement stop_scan() tests
+- [ ] Documentation
+  - [ ] Add driver layer scan features documentation
+  - [ ] Add driver layer scan features tests documentation
+
+__Milestone 4__
+Live Data Processing
+- [ ] Documentation
+- [ ] Implement live data processing pipeline
+  - [ ] Aquire scan packets
+  - [ ] Decode scan packets
+  - [ ] Convert polar coordinates to cartesian coordinates
+  - [ ] Generate point cloud
+  - [ ] Verify point cloud generation
+- [ ] Data Processing Tests
+- [ ] Point Cloud Generation
+- [ ] Point Cloud Tests
+
+__Milestone 5__
+Visualization Layer
+- [ ] Documentation
+- [ ] Open3D Visualization
+- [ ] Live point cloud updates
+- [ ] Camera control
+- [ ] Performance measurements
+- [ ] Visualization Tests
+
+__Milestone 6__
+Application Layer
+- [ ] Documentation
+- [ ] Configuration
+- [ ] Logging
+- [ ] CLI
+- [ ] Run-time Parameters
+- [ ] Save/Load Scan Data
+
+__Milestone 7__
 
 - [ ] Establish correct single-threaded streaming
 - [ ] Add background acquisition worker
@@ -43,6 +106,4 @@ Milestone 4
 - [ ] Measure acquisition and processing rates
 - [ ] Evaluate multiprocessing if processing falls behind
 
-□ Incomplete
-→ In Progress
-✔ Complete
+
