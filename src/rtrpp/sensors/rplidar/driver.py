@@ -35,22 +35,22 @@ class RPLidarDriver:
                 expected_data_type=prot.RPLidarResponseType.DEVICE_INFO
             )
 
-            raw_data = self._transport.read(descriptor.data_length)
+            raw_data = self._read_exactly(descriptor.data_length,"GET_INFO")
             return prot.parse_get_info_response(raw_data)
         
         except ValueError as exc:
             raise RPLidarProtocolError(
-                "GET_INFO returned an invalid protocol response."
+                f"GET_INFO returned an invalid protocol response. {exc}"
             ) from exc
         
         except TimeoutError as exc:
             raise RPLidarTimeoutError(
-                "Timed out while waiting for the GET_INFO response."
+                f"Timed out while waiting for the GET_INFO response. {exc}"
             ) from exc
         
         except (serial.SerialException, OSError, RuntimeError) as exc:
             raise RPLidarConnectionError(
-                "Communication failed during GET_INFO."
+                f"Communication failed during GET_INFO. {exc}"
             ) from exc
 
     def get_health(self) -> prot.RPLidarGetHealthData:
@@ -69,7 +69,7 @@ class RPLidarDriver:
                 expected_data_type=prot.RPLidarResponseType.DEVICE_HEALTH
             )
 
-            raw_data = self._transport.read(descriptor.data_length)
+            raw_data = self._read_exactly(descriptor.data_length, "GET_HEALTH")
 
             health = prot.parse_get_health_response(raw_data)
 
@@ -81,17 +81,17 @@ class RPLidarDriver:
         
         except ValueError as exc:
             raise RPLidarProtocolError(
-                "GET_HEALTH returned an invalid protocol response."
+                f"GET_HEALTH returned an invalid protocol response. {exc}"
             ) from exc
         
         except TimeoutError as exc:
             raise RPLidarTimeoutError(
-                "Timed out while waiting for the GET_HEALTH response."
+                f"Timed out while waiting for the GET_HEALTH response. {exc}"
             ) from exc
         
         except (serial.SerialException, OSError, RuntimeError) as exc:
             raise RPLidarConnectionError(
-                "Communication failed during GET_HEALTH."
+                f"Communication failed during GET_HEALTH. {exc}"
             ) from exc
 
     def get_samplerate(self) -> prot.RPLidarGetSamplerateData:
@@ -110,22 +110,26 @@ class RPLidarDriver:
                 expected_data_type=prot.RPLidarResponseType.DEVICE_SAMPLERATE
             )
 
-            raw_data = self._transport.read(descriptor.data_length)
+            raw_data = self._read_exactly(
+                descriptor.data_length, 
+                "GET_SAMPLERATE"
+            )
+
             return prot.parse_get_samplerate_response(raw_data)
         
         except ValueError as exc:
             raise RPLidarProtocolError(
-                "GET_SAMPLERATE returned an invalid protocol response."
+                f"GET_SAMPLERATE returned an invalid protocol response. {exc}"
             ) from exc
         
         except TimeoutError as exc:
             raise RPLidarTimeoutError(
-                "Timed out while waiting for the GET_SAMPLERATE response."
+                f"Timed out while waiting for the GET_SAMPLERATE response. {exc}"
             ) from exc
         
         except (serial.SerialException, OSError, RuntimeError) as exc:
             raise RPLidarConnectionError(
-                "Communication failed during GET_SAMPLERATE response. "
+                f"Communication failed during GET_SAMPLERATE response. {exc} "
             ) from exc
         
     def stop(self) -> None:
@@ -136,7 +140,7 @@ class RPLidarDriver:
 
         except (serial.SerialException, OSError, RuntimeError) as exc:
             raise RPLidarConnectionError(
-                "Communication failed during STOP. "
+                f"Communication failed during STOP. {exc}"
             ) from exc
         
     def reset(self) -> None:
@@ -147,7 +151,7 @@ class RPLidarDriver:
 
         except (serial.SerialException, OSError, RuntimeError) as exc:
             raise RPLidarConnectionError(
-                "Communication failed during RESET. "
+                f"Communication failed during RESET. {exc}"
             ) from exc
 
 
@@ -161,7 +165,7 @@ class RPLidarDriver:
             descriptor: prot.RPLidarResponseDescriptor,
             *,
             command: prot.RPLidarCommand,
-            expected_data_length: int,
+            expected_data_length: prot.RPLidarDataLength,
             expected_send_mode: prot.RPLidarSendMode,
             expected_data_type: prot.RPLidarResponseType
     ) -> None:
@@ -169,9 +173,9 @@ class RPLidarDriver:
         """
         operation = command.name
 
-        if descriptor.data_length != expected_data_length:
+        if descriptor.data_length != expected_data_length.value:
             raise ValueError(
-                f"{operation} expected {expected_data_length} response bytes, "
+                f"{operation} expected {expected_data_length.value} response bytes, "
                 f"received descriptor length {descriptor.data_length}."
             )
 
@@ -193,7 +197,7 @@ class RPLidarDriver:
 
         if len(data) != size:
             raise RPLidarTimeoutError(
-                f"{operation} expected {size} bytes but received {len(data)}."
+                f"{operation} expected {size} bytes but received {len(data)} bytes."
             )
         
         return data

@@ -1,5 +1,12 @@
 from dataclasses import dataclass
 from enum import Enum
+from .exceptions import (
+    RPLidarError,
+    RPLidarConnectionError,
+    RPLidarProtocolError,
+    RPLidarTimeoutError,
+    RPLidarDeviceError
+)
 
 SYNC_BYTE = 0xA5
 SYNC_BYTE_RESPONSE = 0x5A
@@ -149,7 +156,7 @@ def build_request(command: RPLidarCommand, payload: bytes = b'') -> bytes:
 def parse_response_descriptor(packet: bytes)-> RPLidarResponseDescriptor:
     """ Parses a response descriptor packet from bytes received from the RPLIDAR device. """
     if len(packet) != 7:
-        raise ValueError("Response descriptor must be exactly 7 bytes. ")
+        raise ValueError(f"Response descriptor must be exactly 7 bytes; received {len(packet)} bytes.")
     
     b0, b1, b2, b3, b4, b5, b6 = packet
     if b0 != SYNC_BYTE or b1 !=SYNC_BYTE_RESPONSE:
