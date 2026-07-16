@@ -92,17 +92,17 @@ docs(ENGINEERING_STANDARDS): Add version control practices and workflow guidelin
 docs(development_checklist): Update development checklist for Milestone 3 and Milestone 4
 ```
 ### Types
-- feat: A new feature
-- fix: A bug fix
-- docs: Documentation only changes
-- style: Changes that do not affect the meaning of the code (white-space, formatting, missing semi-colons, etc)
-- refactor: A code change that neither fixes a bug nor adds a feature
-- perf: A code change that improves performance
-- test: Adding missing tests or correcting existing tests
-- chore: Changes to the build process or auxiliary tools and libraries such as documentation generation
-- ci: Changes to our CI configuration files and scripts
-- build: Changes that affect the build system or external dependencies (example scopes: gulp, broccoli, npm)
-- revert: Reverts a previous commit
+- `feat`: A new feature
+- `fix`: A bug fix
+- `docs`: Documentation only changes
+- `style`: Changes that do not affect the meaning of the code (white-space, formatting, missing semi-colons, etc)
+- `refactor`: A code change that neither fixes a bug nor adds a feature
+- `perf`: A code change that improves performance
+- `test`: Adding missing tests or correcting existing tests
+- `chore`: Changes to the build process or auxiliary tools and libraries such as documentation generation
+- `ci`: Changes to our CI configuration files and scripts
+- `build`: Changes that affect the build system or external dependencies (example scopes: gulp, broccoli, npm)
+- `revert`: Reverts a previous commit
 
 ### Scope
 The scope should be the name of the package, module, or component that is being changed.
@@ -128,5 +128,3 @@ When making changes to the codebase, it is important to maintain a clear and con
 ### Fixed
 - N/A
 ```
-
-Add ENGINEERING_STANDARDS with version control practices
