@@ -29,20 +29,24 @@ git checkout -b feature/<feature-name>
 5. After completing the changes, commit your changes and push the branch to the remote repository.
 ```text
 git add .
-git commit -m "Add <feature-name>"
+git commit -m "<commit-message>"
 git push origin feature/<feature-name>
 ```
-6. Merge the feature branch back into the `dev` branch.
+
+### Merging Changes Back into the `dev` Branch
+Once the feature or bug fix is complete and tested, merge the changes back into the `dev` branch. This can be done using the following steps:
+
+1. Merge the feature branch back into the `dev` branch.
 ```text
 git checkout dev
 git merge feature/<feature-name>
 git push origin dev
 ```
-7. Delete the feature branch from the remote repository.
+2. Delete the feature branch from the remote repository.
 ```text
 git push origin --delete feature/<feature-name>
 ```
-8. If the changes are ready for production, merge the `dev` branch into the `main` branch.
+3. If the changes are ready for production, merge the `dev` branch into the `main` branch.
 ```text
 git checkout main
 git merge dev
@@ -59,6 +63,49 @@ Helpful Notes:
 
 - When merging feature branches back into the `dev` branch, resolve any merge conflicts that may arise. This may require manual intervention to ensure that the code is merged correctly and that no functionality is lost.
 - Before merging the `dev` branch into the `main` branch, ensure that all changes have been thoroughly tested and reviewed. This will help maintain the stability of the production code and prevent any issues from being introduced into the main branch.
+
+## Commit Message Guidelines
+- Use the present tense ("Add feature" not "Added feature").
+- Use the imperative mood ("Move cursor to..." not "Moves cursor to...").
+- Limit the first line to 72 characters or less.
+- Present the message in a structured format:
+```text
+<type>(<scope>): <subject>
+<BLANK LINE>
+<body>
+<BLANK LINE><footer>
+```
+__Feature example:__
+```text
+feat(driver): Implement get_info() method
+```
+This commit adds the get_info() method to the RPLIDAR driver, allowing users to retrieve device information from the RPLIDAR device. The method sends a request to the device and processes the response to return the relevant information in a structured format.
+
+__Documentation example:__
+```text
+docs(driver): Update driver documentation for get_info() method
+```
+```text
+docs(ENGINEERING_STANDARDS): Add version control practices and workflow guidelines
+```
+```text
+docs(development_checklist): Update development checklist for Milestone 3 and Milestone 4
+```
+### Types
+- feat: A new feature
+- fix: A bug fix
+- docs: Documentation only changes
+- style: Changes that do not affect the meaning of the code (white-space, formatting, missing semi-colons, etc)
+- refactor: A code change that neither fixes a bug nor adds a feature
+- perf: A code change that improves performance
+- test: Adding missing tests or correcting existing tests
+- chore: Changes to the build process or auxiliary tools and libraries such as documentation generation
+- ci: Changes to our CI configuration files and scripts
+- build: Changes that affect the build system or external dependencies (example scopes: gulp, broccoli, npm)
+- revert: Reverts a previous commit
+
+### Scope
+The scope should be the name of the package, module, or component that is being changed.
 
 ## Changelog
 When making changes to the codebase, it is important to maintain a clear and concise changelog. This will help keep track of what changes have been made, when they were made, and who made them. The changelog should be updated with each new release and should include the following information:
