@@ -40,13 +40,19 @@ Once the feature or bug fix is complete and tested, merge the changes back into 
 ```text
 git checkout dev
 git merge feature/<feature-name>
+git merge --no-ff feature/<feature-name> -m "Merge feature/<feature-name> into dev"
+pytest -v
 git push origin dev
 ```
-2. Delete the feature branch from the remote repository.
+2. Delete the feature branch from the local repository.
+```text
+git branch -d feature/<feature-name>
+```
+3. Delete the feature branch from the remote repository.
 ```text
 git push origin --delete feature/<feature-name>
 ```
-3. If the changes are ready for production, merge the `dev` branch into the `main` branch.
+4. If the changes are ready for production, merge the `dev` branch into the `main` branch.
 ```text
 git checkout main
 git merge dev
@@ -59,8 +65,7 @@ Helpful Notes:
 - Always ensure that you are working on the latest version of the `dev` branch before creating a new feature branch. You can do this by running `git pull origin dev` before creating a new branch.
 - Use descriptive names for your feature branches to make it clear what the branch is for. For example, use `feature/login-system` instead of `feature/feature1`.
 - Regularly run the test suite to catch any issues early in the development process. This will help ensure that your changes do not introduce new bugs or break existing functionality.
-- Keep feature branches local until the feature is complete and tested. This will help prevent incomplete or unstable code from being merged into the `dev` branch.
-
+- Keep incomplete feature branches isolated from `dev` branch. Feature branches may be pushed to the remote repository for backup, but they must not be merged until the feature is complete and tests pass.
 - When merging feature branches back into the `dev` branch, resolve any merge conflicts that may arise. This may require manual intervention to ensure that the code is merged correctly and that no functionality is lost.
 - Before merging the `dev` branch into the `main` branch, ensure that all changes have been thoroughly tested and reviewed. This will help maintain the stability of the production code and prevent any issues from being introduced into the main branch.
 
