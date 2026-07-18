@@ -1,6 +1,7 @@
 import open3d as o3d
 import numpy as np
 
+
 def extract_segments(points, distance_threshold=0.2, ransac_n=3, num_iterations=1000):
     """Extract ground points from the input point cloud.
 
@@ -23,7 +24,7 @@ def extract_segments(points, distance_threshold=0.2, ransac_n=3, num_iterations=
     plane_model, inliers = pcd.segment_plane(
         distance_threshold=distance_threshold,
         ransac_n=ransac_n,
-        num_iterations=num_iterations
+        num_iterations=num_iterations,
     )
 
     # Extract ground and non-ground points
@@ -31,4 +32,3 @@ def extract_segments(points, distance_threshold=0.2, ransac_n=3, num_iterations=
     objects = pcd.select_by_index(inliers, invert=True)
 
     return np.asarray(ground_points.points), np.asarray(objects.points)
-

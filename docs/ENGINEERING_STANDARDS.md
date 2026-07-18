@@ -96,6 +96,11 @@ docs(ENGINEERING_STANDARDS): Add version control practices and workflow guidelin
 ```text
 docs(development_checklist): Update development checklist for Milestone 3 and Milestone 4
 ```
+
+__Test example:__
+```text
+test(driver): Add unit tests for get_info() method
+```
 ### Types
 - `feat`: A new feature
 - `fix`: A bug fix

@@ -1,6 +1,7 @@
 import numpy as np
 import open3d as o3d
 
+
 def remove_outliers(points, nb_neighbors=20, std_ratio=2.0):
     """Remove outliers from the point cloud using statistical outlier removal.
     Parameters:
@@ -12,12 +13,12 @@ def remove_outliers(points, nb_neighbors=20, std_ratio=2.0):
     """
     # Create an Open3D point cloud object
     pcd = o3d.geometry.PointCloud()
-    pcd.points = o3d.utility.Vector3dVector(points) 
+    pcd.points = o3d.utility.Vector3dVector(points)
     # Remove outliers using statistical outlier removal
     pcd, _ = pcd.remove_statistical_outlier(nb_neighbors=nb_neighbors, std_ratio=std_ratio)
 
     # print(
-    #     "Points after outlier removal:", 
+    #     "Points after outlier removal:",
     #     len(pcd.points)
     # )
     return np.asarray(pcd.points)

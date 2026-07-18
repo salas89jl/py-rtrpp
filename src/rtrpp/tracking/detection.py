@@ -4,10 +4,10 @@ import open3d as o3d
 from rtrpp.segmentation.object_classification import simple_classification
 from rtrpp.segmentation.bounding_box import compute_bounding_box
 
-class Detection:
 
+class Detection:
     # Constructor
-    def __init__(self, cluster_id, classification, center, bbox, length, width, height): 
+    def __init__(self, cluster_id, classification, center, bbox, length, width, height):
         self.cluster_id = cluster_id
         self.classification = classification
         self.center = center
@@ -17,15 +17,13 @@ class Detection:
         self.height = height
         self.volume = length * height * width
 
-
     def __str__(self):
-        return(
+        return (
             f"Cluster {self.cluster_id}: {self.classification} | "
             f"Center=({self.center[0]:.2f}, {self.center[1]:.2f}, {self.center[2]:.2f}) | "
             f"L={self.length:.2f}, W={self.width:.2f}, H={self.height:.2f}, "
             f"V={self.volume:.2f}"
         )
-    
 
 
 def detected_bounding_boxes(object_points, labels):
@@ -54,14 +52,10 @@ def detected_bounding_boxes(object_points, labels):
             continue
 
         # Compute the bounding box dimensions for analysis
-        box = compute_bounding_box(cluster_points)       
-        
+        box = compute_bounding_box(cluster_points)
+
         # classify all of the object clusters based on box dimensions
-        label = simple_classification(
-            box["length"],
-            box["width"],
-            box["height"]
-        )
+        label = simple_classification(box["length"], box["width"], box["height"])
 
         # Create a point cloud object for the current cluster
         pcd_cluster = o3d.geometry.PointCloud()
@@ -69,18 +63,21 @@ def detected_bounding_boxes(object_points, labels):
 
         # Compute the axis-aligned bounding box for the current cluster
         bbox = pcd_cluster.get_axis_aligned_bounding_box()
-        bbox.color = get_label_color(label) # Set bounding box color to red
+        bbox.color = get_label_color(label)  # Set bounding box color to red
 
         # Print classification
         center = bbox.get_center()
 
         # create detection object
-        detection = Detection(cluster_id, label, center, bbox, box["length"], box["width"],box["height"])
+        detection = Detection(
+            cluster_id, label, center, bbox, box["length"], box["width"], box["height"]
+        )
 
         # Append the bounding box to the list of bounding boxes
         bounding_boxes.append(detection)
 
     return bounding_boxes
+
 
 def get_label_color(label):
     """
@@ -94,14 +91,15 @@ def get_label_color(label):
     """
 
     if label == "Car":
-        return [1, 0, 0]      #red
+        return [1, 0, 0]  # red
     elif label == "Pedestrian":
-        return [0, 1, 0]    # green
+        return [0, 1, 0]  # green
     elif label == "Cyclist":
-        return [0, 0, 1]   # blue
-    else: 
-        return [0, 0, 0]    # black
-    
+        return [0, 0, 1]  # blue
+    else:
+        return [0, 0, 0]  # black
+
+
 def get_box_volume(length, width, height):
     """
     Calculate the volume of a bounding box given its dimensions.

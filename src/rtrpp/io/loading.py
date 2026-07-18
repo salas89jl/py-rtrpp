@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def load_point_cloud(file_path):
     """
     Load a point cloud from a binary file.

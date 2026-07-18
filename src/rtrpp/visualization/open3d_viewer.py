@@ -1,12 +1,11 @@
 import open3d as o3d
-import time 
+import time
 
 
 def animate_frames(frame_point_cloud, delay=0.1):
-
     """
     Animate a sequence of point cloud frames using Open3D.
-    
+
     Parameters:
     frame_point_cloud (list): A list of Open3D point cloud objects representing the frames to be animateds
     delay (float): The time delay between frames in seconds. Default is 0.1 seconds.
@@ -23,7 +22,7 @@ def animate_frames(frame_point_cloud, delay=0.1):
 
         if frame_pcd.has_colors():
             pcd.colors = frame_pcd.colors
-        
+
         vis.update_geometry(pcd)
         vis.poll_events()
         vis.update_renderer
@@ -33,8 +32,8 @@ def animate_frames(frame_point_cloud, delay=0.1):
 
     vis.destroy_window()
 
-def animate_frames_with_boxes(frames, delay=0.2):
 
+def animate_frames_with_boxes(frames, delay=0.2):
     """
     Animate a sequence of point cloud frames with bounding boxes using Open3D.
 
@@ -55,7 +54,7 @@ def animate_frames_with_boxes(frames, delay=0.2):
         vis.add_geometry(box)
 
     current_boxes = boxes
-    
+
     for frame_idx, frame in enumerate(frames):
         # Remove old boxes
         for box in current_boxes:
@@ -71,12 +70,11 @@ def animate_frames_with_boxes(frames, delay=0.2):
         for box in current_boxes:
             vis.add_geometry(box, reset_bounding_box=False)
 
-
         # Update the visualizer and wait for the specified delay
         vis.poll_events()
         vis.update_renderer()
 
-        print(f"Showing frame {frame_idx}") 
+        print(f"Showing frame {frame_idx}")
 
         time.sleep(delay)
 

@@ -1,6 +1,7 @@
 import numpy as np
 import open3d as o3d
 
+
 def cluster_objects(points, eps=0.7, min_points=10):
     """Cluster the input points using DBSCAN algorithm.
 
@@ -18,11 +19,6 @@ def cluster_objects(points, eps=0.7, min_points=10):
     pcd.points = o3d.utility.Vector3dVector(points)
 
     # Perform DBSCAN clustering
-    labels = np.array(
-        pcd.cluster_dbscan(
-            eps=eps, 
-            min_points=min_points
-        )
-    )
+    labels = np.array(pcd.cluster_dbscan(eps=eps, min_points=min_points))
 
     return labels

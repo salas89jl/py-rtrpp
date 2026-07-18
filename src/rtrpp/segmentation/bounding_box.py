@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def compute_bounding_box(cluster_points):
     """
     Compute the axis-aligned bounding box for a given cluster of points.
@@ -32,7 +33,7 @@ def compute_bounding_box(cluster_points):
     width = min(dim1, dim2)
     height = zmax - zmin
 
-    return { 
+    return {
         "xmin": xmin,
         "xmax": xmax,
         "ymin": ymin,
@@ -41,5 +42,5 @@ def compute_bounding_box(cluster_points):
         "zmax": zmax,
         "length": length,
         "width": width,
-        "height": height
+        "height": height,
     }

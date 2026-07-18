@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def distances(xyz, axis):
     """
     Compute the Euclidean distances of points in a point cloud from the origin along a specified axis.
@@ -17,6 +18,7 @@ def distances(xyz, axis):
     print("Furthest point:", distance.max())
     print("Average distance:", distance.mean())
     return distance
+
 
 def distances2(x, y, z):
     """

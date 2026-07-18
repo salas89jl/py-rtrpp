@@ -1,9 +1,7 @@
 # This script checks the connection to the RPLidar device.
 
 
-
 from rtrpp.sensors.rplidar.transport import RPLidarTransport
-
 
 
 def main():
@@ -19,6 +17,7 @@ def main():
     finally:
         lidar.close()
         print("Connection closed.")
+
 
 if __name__ == "__main__":
     main()
