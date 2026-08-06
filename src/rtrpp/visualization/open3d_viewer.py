@@ -7,7 +7,7 @@ def animate_frames(frame_point_cloud, delay=0.1):
     Animate a sequence of point cloud frames using Open3D.
 
     Parameters:
-    frame_point_cloud (list): A list of Open3D point cloud objects representing the frames to be animateds
+    frame_point_cloud (list): List of Open3D point cloud objects representing frames to be animated.
     delay (float): The time delay between frames in seconds. Default is 0.1 seconds.
 
     """
@@ -38,8 +38,11 @@ def animate_frames_with_boxes(frames, delay=0.2):
     Animate a sequence of point cloud frames with bounding boxes using Open3D.
 
     Parameters:
-    frames (list): A list of dictionaries, each containing a point cloud and its corresponding bounding
-    boxes. Each dictionary should have the keys "pcd" (Open3D point cloud object) and "boxes" (list of Open3D bounding box objects).
+
+    frames (list): A list of dictionaries, each containing a point cloud and
+    corresponding bounding boxes. Each dictionary should have the keys "pcd"
+    (Open3D point cloud object) and "boxes" (list of Open3D bounding box objects).
+
     delay (float): The time delay between frames in seconds. Default is 0.2 seconds.
     """
     vis = o3d.visualization.Visualizer()
