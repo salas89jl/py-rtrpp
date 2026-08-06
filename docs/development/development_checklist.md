@@ -57,10 +57,12 @@ Hardware Integration
   - [x] Hardware results are recorded in documentation
   - [x] Existing 75 unit tests pass with hardware connected
 - [ ] Driver Layer (w/ start_scan feature)
+  - [ ] Implement driver state
   - [ ] Implement start_scan()
   - [ ] Implement stop_scan()
   - [ ] Verify continuous scan data acquisition
 - [ ] Driver Tests (w/ start_scan feature)
+  - [ ] Implement driver state tests
   - [ ] Implement start_scan() tests
   - [ ] Implement stop_scan() tests
 - [ ] Documentation
