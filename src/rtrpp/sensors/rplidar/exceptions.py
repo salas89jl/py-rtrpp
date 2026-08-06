@@ -15,30 +15,36 @@ class RPLidarProtocolError(RPLidarError):
 
     pass
 
+
 class RPLidarDeviceError(RPLidarError):
     """Raised when the RPLIDAR device reports an internal error or malfunction."""
 
     pass
+
 
 class RPLidarHealthError(RPLidarDeviceError):
     """Raised when the RPLIDAR reports a health status indicating a problem."""
 
     pass
 
+
 class RPLidarTimeoutError(RPLidarConnectionError):
     """Raised when expected RPLIDAR response is not received within the specified timeout period."""
 
     pass
+
 
 class RPLidarDriverError(RPLidarError):
     """Raised when the RPLIDAR driver encounters an error."""
 
     pass
 
+
 class RPLidarStateError(RPLidarDriverError):
     """Raised when the RPLIDAR is in an unexpected or invalid state."""
 
     pass
+
 
 class TransportError(Exception):
     """Base exception for transport failures."""
@@ -49,7 +55,7 @@ class TransportError(Exception):
 class TransportTimeoutError(TransportError):
     """Requested serial bytes were not received before timeout."""
 
-    pass    
+    pass
 
 
 class TransportConnectionError(TransportError):

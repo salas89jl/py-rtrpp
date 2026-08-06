@@ -1,4 +1,3 @@
-
 class RPLidarHealthWarning(UserWarning):
     """Warning emitted when the RPLidar reports a non-fatal health risk."""
 
