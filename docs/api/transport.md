@@ -21,6 +21,10 @@ This class is responsible for opening and closing the serial port, reading and w
 ```mermaid
 classDiagram
     class RPLidarTransport {
+        +str port
+        +int baudrate
+        +float timeout
+        +Optional[serial.Serial]: serial_connection
         +__init__(port: str, baudrate: int = 1_000_000, timeout: float = 5.0)
         +open() -> RPLidarTransport
         +close()

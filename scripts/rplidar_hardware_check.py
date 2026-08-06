@@ -2,7 +2,6 @@ from rtrpp.sensors.rplidar.driver import RPLidarDriver
 from rtrpp.sensors.rplidar.exceptions import RPLidarError
 from rtrpp.sensors.rplidar.transport import RPLidarTransport
 
-import pytest
 
 def main() -> None:
     port = "/dev/tty.usbserial-210"
@@ -19,8 +18,8 @@ def main() -> None:
         driver.stop()
         info = driver.get_info()
         health = driver.get_health()
-        sample_rate = driver.get_samplerate()   
-        
+        sample_rate = driver.get_samplerate()
+
         print(info)
         print(health)
         print(sample_rate)
@@ -36,4 +35,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
