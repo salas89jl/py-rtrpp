@@ -2,7 +2,6 @@ from collections import deque
 from dataclasses import dataclass, field
 
 from rtrpp.sensors.rplidar.exceptions import (
-    TransportTimeoutError,
     TransportConnectionError,
 )
 
@@ -42,7 +41,7 @@ class FakeTransport:
 
         if self.fail_close is not None:
             raise self.fail_close
-
+        
         self.is_open = False
 
     def write(self, data: bytes) -> bytes:

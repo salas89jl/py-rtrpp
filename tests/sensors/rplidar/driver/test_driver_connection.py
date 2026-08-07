@@ -2,9 +2,10 @@ import pytest
 
 from rtrpp.sensors.rplidar.protocol import (
     RPLidarCommand,
+    RPLidarScanData,
 )
 
-from src.rtrpp.sensors.rplidar.exceptions import (
+from rtrpp.sensors.rplidar.exceptions import (
     TransportConnectionError,
     TransportTimeoutError,
     RPLidarStateError,
@@ -14,7 +15,7 @@ from src.rtrpp.sensors.rplidar.exceptions import (
     RPLidarProtocolError,
 )
 
-from src.rtrpp.sensors.rplidar.rplidar_warnings import (
+from rtrpp.sensors.rplidar.rplidar_warnings import (
     RPLidarHealthWarning,
 )
 
@@ -26,11 +27,12 @@ from tests.sensors.rplidar.driver.assertions import (
     assert_not_connected_invariants,
     assert_idle_invariants,
     assert_protection_stop_invariants,
+    assert_transport_untouched,
 )
 
 
-# Tests for driver.connect()
-def test_connect_valid_transition_to_idle_state(not_connected_driver):
+# connect - successful outcomes
+def test_connect_good_health_enters_idle(not_connected_driver):
     driver, transport = not_connected_driver
 
     queue_get_health_response(
@@ -45,19 +47,7 @@ def test_connect_valid_transition_to_idle_state(not_connected_driver):
     assert transport.written == bytes([0xA5, RPLidarCommand.GET_HEALTH.value])
 
 
-def test_connect_raises_state_error_with_invalid_starting_state(idle_driver):
-    driver, transport = idle_driver
-
-    with pytest.raises(
-        RPLidarStateError,
-        match="Operation requires working state NOT_CONNECTED; current working state is IDLE.",
-    ):
-        driver.connect()
-
-    assert_idle_invariants(driver)
-
-
-def test_connect_emmits_warning_for_health_warning(not_connected_driver):
+def test_connect_warning_health_enters_idle_and_warns(not_connected_driver):
     driver, transport = not_connected_driver
 
     queue_get_health_response(
@@ -66,7 +56,7 @@ def test_connect_emmits_warning_for_health_warning(not_connected_driver):
         error_code=0x1234,
     )
 
-    with pytest.warns(RPLidarHealthWarning):
+    with pytest.warns(RPLidarHealthWarning, match="potential risk"):
         driver.connect()
 
     assert_idle_invariants(driver)
@@ -74,7 +64,7 @@ def test_connect_emmits_warning_for_health_warning(not_connected_driver):
     assert driver._health.error_code == 0x1234
 
 
-def test_connect_raises_health_error_and_moves_to_protection_stop(not_connected_driver):
+def test_connect_error_health_enters_protection_stop(not_connected_driver):
     driver, transport = not_connected_driver
 
     queue_get_health_response(
@@ -86,12 +76,29 @@ def test_connect_raises_health_error_and_moves_to_protection_stop(not_connected_
     with pytest.raises(RPLidarDeviceError, match="internal error"):
         driver.connect()
 
+    assert transport.is_open is True
     assert_protection_stop_invariants(driver)
     assert driver._health.status == 2
     assert driver._health.error_code == 0x1234
 
 
-def test_connect_stays_in_not_connected_state_with_open_error(
+# connect - invalid state
+def test_connect_raises_state_error_with_invalid_starting_state(idle_driver):
+    driver, transport = idle_driver
+
+    with pytest.raises(
+        RPLidarStateError,
+        match="Operation requires working state NOT_CONNECTED; current working state is IDLE.",
+    ):
+        driver.connect()
+
+    assert_idle_invariants(driver)
+    assert_transport_untouched(transport)
+   
+
+
+# connect - initialization failures
+def test_connect_open_failure_restores_not_connected(
     not_connected_driver,
 ):
     driver, transport = not_connected_driver
@@ -105,7 +112,44 @@ def test_connect_stays_in_not_connected_state_with_open_error(
     assert transport.is_open is False
 
 
-def test_connect_stays_in_not_connected_state_with_health_value_error(
+def test_connect_health_timeout_restores_not_connected(
+    not_connected_driver,
+):
+    driver, transport = not_connected_driver
+
+    queue_get_health_response(
+        transport,
+        status=0,
+        error_code=0x1234,
+    )
+
+    transport.fail_read = TransportTimeoutError("Timeout requesting health check")
+
+    with pytest.raises(RPLidarTimeoutError, match="health check"):
+        driver.connect()
+
+    assert_not_connected_invariants(driver)
+    assert transport.is_open is False
+    assert driver._health.status == 0
+
+
+def test_connect_health_timeout_while_resquesting_restores_not_connected(
+    not_connected_driver,
+):
+    driver, transport = not_connected_driver
+
+    transport.fail_write = TransportTimeoutError("Timeout requesting health")
+
+    with pytest.raises(RPLidarTimeoutError, match="Timeout requesting health"):
+        driver.connect()
+
+    assert_not_connected_invariants(driver)
+    assert transport.is_open is False
+    assert driver._health.status == 0
+    assert driver._health.error_code == 0
+
+
+def test_connect_health_protocol_error_restores_not_connected(
     not_connected_driver,
 ):
     driver, transport = not_connected_driver
@@ -124,28 +168,7 @@ def test_connect_stays_in_not_connected_state_with_health_value_error(
     assert driver._health.error_code == 0
 
 
-def test_connect_stays_in_not_connected_state_with_health_timeout_error(
-    not_connected_driver,
-):
-    driver, transport = not_connected_driver
-
-    queue_get_health_response(
-        transport,
-        status=0,
-        error_code=0x1234,
-    )
-
-    transport.fail_read = TransportTimeoutError("Timeout requesting health check")
-
-    with pytest.raises(RPLidarTimeoutError, match="health check"):
-        driver.connect()
-
-    assert_not_connected_invariants(driver)
-    assert driver._health.status == 0
-    assert driver._health.error_code == 0
-
-
-def test_connect_stays_in_not_connected_state_with_write_connection_error(
+def test_connect_health_connection_error_restores_not_connected(
     not_connected_driver,
 ):
     driver, transport = not_connected_driver
@@ -156,23 +179,31 @@ def test_connect_stays_in_not_connected_state_with_write_connection_error(
 
     assert_not_connected_invariants(driver)
 
-
-def test_connect_stays_in_not_connnected_state_with_write_timeout_error(
-    not_connected_driver,
+def test_connect_raises_state_error_with_repeated_connects(
+        not_connected_driver,
 ):
     driver, transport = not_connected_driver
 
-    transport.fail_write = TransportTimeoutError("Timeout requesting health")
+    queue_get_health_response(
+        transport,
+        status=0,
+        error_code=0x1234
+    )
 
-    with pytest.raises(RPLidarTimeoutError, match="Timeout requesting health"):
+    driver.connect()
+
+    with pytest.raises(
+        RPLidarStateError, 
+        match="requires working state NOT_CONNECTED"
+    ):
         driver.connect()
 
-    assert_not_connected_invariants(driver)
-    assert driver._health.status == 0
-    assert driver._health.status == 0
+    assert_idle_invariants(driver)
+    assert transport.open_count == 1
 
 
-def test_connect_stays_in_connected_state_with_flush_error(
+# connect - recovery failures
+def test_connect_health_failure_restores_not_connected(
     not_connected_driver,
 ):
     driver, transport = not_connected_driver
@@ -187,9 +218,7 @@ def test_connect_stays_in_connected_state_with_flush_error(
     assert_not_connected_invariants(driver)
 
 
-# Tests for driver.disconnect()
-
-
+# disconnect - starting states
 def test_disconnect_closes_from_not_connected_state(not_connected_driver):
     driver, transport = not_connected_driver
 
@@ -208,15 +237,15 @@ def test_disconnect_closes_from_idle_state(idle_driver):
     assert transport.close_count == 1
 
 
-def test_disconnect_closes_scanning_state(scanning_driver):
+def test_disconnect_closes_from_scanning_state(scanning_driver):
     driver, transport = scanning_driver
 
     driver.disconnect()
 
-    assert_not_connected_invariants(driver)
+
     assert transport.close_count == 1
     assert transport.written == bytes([0xA5, RPLidarCommand.STOP.value])
-
+    assert_not_connected_invariants(driver)
 
 def test_disconnect_closes_from_protection_stop(protection_stop_driver):
     driver, transport = protection_stop_driver
@@ -226,8 +255,20 @@ def test_disconnect_closes_from_protection_stop(protection_stop_driver):
     assert_not_connected_invariants(driver)
     assert transport.close_count == 1
 
+def test_disconnect_closes_with_repeated_disconnects(
+        scanning_driver,
+):
+    driver, transport = scanning_driver
 
-def test_disconnect_closes_with_stop_error(scanning_driver):
+    driver.disconnect()
+    driver.disconnect()
+
+    assert_not_connected_invariants(driver)
+    assert transport.written == bytes([0xA5, RPLidarCommand.STOP.value])
+    assert transport.close_count == 2
+
+# disconnect - cleanup failures and precedence
+def test_disconnect_closes_when_best_effort_stop_fails(scanning_driver):
     driver, transport = scanning_driver
 
     transport.fail_write = TransportConnectionError("STOP failed")
@@ -237,10 +278,40 @@ def test_disconnect_closes_with_stop_error(scanning_driver):
 
     assert_not_connected_invariants(driver)
     assert transport.is_open is False
-    assert transport.close_count == 2
+    assert transport.close_count == 1
 
+def test_disconnect_closes_when_best_effort_stop_timesout(scanning_driver):
+    driver, transport = scanning_driver
 
-def test_disconnect_transitions_not_connected_state_with_close_error(idle_driver):
+    transport.fail_write = TransportTimeoutError("STOP timed out")
+
+    with pytest.raises(RPLidarTimeoutError, match="STOP timed out"):
+        driver.disconnect()
+
+    assert_not_connected_invariants(driver)
+    
+
+def test_disconnect_close_failure_restores_logical_state_from_scanning(scanning_driver):
+
+    measurement = RPLidarScanData(
+        start_flag=True,
+        quality=1,
+        angle_degrees=90.0,
+        distance_mm=10.0,
+    )
+    driver, transport = scanning_driver
+
+    driver._pending_measurement = measurement
+
+    transport.fail_close = TransportConnectionError("Close failed")
+
+    with pytest.raises(RPLidarConnectionError, match="Close failed"):
+        driver.disconnect()
+
+    assert_not_connected_invariants(driver)
+    
+
+def test_disconnect_close_failure_restores_logical_state(idle_driver):
     driver, transport = idle_driver
 
     transport.fail_close = TransportConnectionError("close failed")
@@ -249,10 +320,10 @@ def test_disconnect_transitions_not_connected_state_with_close_error(idle_driver
         driver.disconnect()
 
     assert_not_connected_invariants(driver)
-    assert transport.close_count == 2
+    assert transport.close_count == 1
 
 
-def test_disconnect_close_takes_precedence_over_stop_error(
+def test_disconnect_close_failure_takes_precedence(
     scanning_driver,
 ):
     driver, transport = scanning_driver
@@ -264,4 +335,4 @@ def test_disconnect_close_takes_precedence_over_stop_error(
         driver.disconnect()
 
     assert_not_connected_invariants(driver)
-    assert transport.close_count == 3
+    assert transport.close_count == 1

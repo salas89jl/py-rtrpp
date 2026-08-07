@@ -1,8 +1,8 @@
 import pytest
 
 from tests.sensors.rplidar.test_support.fakes import FakeTransport
-from src.rtrpp.sensors.rplidar.driver import RPLidarDriver
-from src.rtrpp.sensors.rplidar.protocol import (
+from rtrpp.sensors.rplidar.driver import RPLidarDriver
+from rtrpp.sensors.rplidar.protocol import (
     RPLidarWorkingState,
     RPLidarScanningMode,
     RPLidarResponseType,
@@ -45,7 +45,7 @@ def scanning_driver():
 
 @pytest.fixture
 def protection_stop_driver():
-    transport = FakeTransport()
+    transport = FakeTransport(is_open=True)
     driver = RPLidarDriver(transport)
 
     driver._working_state = RPLidarWorkingState.PROTECTION_STOP

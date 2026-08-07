@@ -183,15 +183,14 @@ class RPLidarTransport:
         return self.serial_connection is not None and self.serial_connection.is_open
 
     # Internal buffer management properties
+    def clear_internal_buffer(self) -> None:
+        """Clears the internal buffer used for reading data."""
+        self._internal_buffer.clear()
+        
     @property
     def internal_buffer_size(self) -> int:
         """Returns the size of the internal buffer used for reading data."""
         return len(self._internal_buffer)
-
-    @property
-    def clear_internal_buffer(self) -> None:
-        """Clears the internal buffer used for reading data."""
-        self._internal_buffer.clear()
 
     @property
     def internal_buffer(self) -> bytes:

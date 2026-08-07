@@ -164,6 +164,8 @@ State-specific handling:
 Raises:
 - `RPLidarConnectionError`
   - When communication fails during STOP or when the transport closure fails
+- `RPLidarTimeoutError`
+  - If the transport fails during STOP within the expected timeout
 - `RPLidarStateError`
   - If the driver reports `SCANNING` but does not satisfy the complete
     `SCANNING` state invariants required by `stop()`

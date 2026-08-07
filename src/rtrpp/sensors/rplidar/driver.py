@@ -173,17 +173,18 @@ class RPLidarDriver:
         self._require_state(prot.RPLidarWorkingState.SCANNING)
 
         try:
-            # Send the STOP request to the RPLIDAR device.
-            self._send_request(prot.RPLidarCommand.STOP)
-            time.sleep(prot.POST_COMMAND_DELAYS[prot.RPLidarCommand.STOP])
-
-            # Clear the transport layer's internal buffer to ensure no residual data remains.
-            self._synchronize_transport_buffers()
+            self._request_stop()
 
         except TransportConnectionError as exc:
             self._recover_from_connection_error()
             raise RPLidarConnectionError(
-                f"Communication failed while stopping the RPLIDAR scan. {exc}"
+                f"Communication failed while stopping the RPLIDAR scan: {exc}"
+            ) from exc
+
+        except TransportTimeoutError as exc:
+            self._recover_from_query_transaction_error()
+            raise RPLidarTimeoutError(
+                f"Communication timed out while stopping RPLIDAR scan: {exc}"
             ) from exc
 
         except ValueError as exc:
@@ -260,29 +261,24 @@ class RPLidarDriver:
     def disconnect(self) -> None:
         """Closes the connection to the RPLIDAR device."""
 
-        stop_error: RPLidarDriverError | None = None
+        stop_error: RPLidarConnectionError | RPLidarTimeoutError | None = None
+        close_error: RPLidarConnectionError | None = None
+
+        if self._working_state is prot.RPLidarWorkingState.SCANNING:
+            stop_error = self._best_effort_stop()
 
         try:
-            if self._working_state is prot.RPLidarWorkingState.SCANNING:
-                try:
-                    self.stop()
-                except (
-                    RPLidarTimeoutError,
-                    RPLidarConnectionError,
-                ) as exc:
-                    stop_error = exc
-
             self._transport.close()
+
         except TransportConnectionError as exc:
-            self._recover_from_connection_error()
-
-            raise RPLidarConnectionError(
-                f"Failed to close communications while disconnecting; {exc}"
-            ) from exc
-
+            close_error = RPLidarConnectionError(f"Tranport failed to close: {exc}")
+            
         finally:
             self._clear_scanning_state()
             self._working_state = prot.RPLidarWorkingState.NOT_CONNECTED
+
+        if close_error is not None:
+            raise close_error
 
         if stop_error is not None:
             raise stop_error
@@ -557,7 +553,7 @@ class RPLidarDriver:
                 stacklevel=2,
             )
 
-    def recover_from_stream_error(self) -> None:
+    def _recover_from_stream_error(self) -> None:
         """
         Recover from timeout or protocol error during a scan stream.
         Resets the transport buffers and clears the scanning state.
@@ -626,6 +622,36 @@ class RPLidarDriver:
         """Sets driver to NOT_CONNECTED invariant state."""
         self._working_state = prot.RPLidarWorkingState.NOT_CONNECTED
         self._clear_scanning_state()
+
+    def _request_stop(self) -> None:
+        # Send the STOP request to the RPLIDAR device.
+        self._send_request(prot.RPLidarCommand.STOP)
+        time.sleep(prot.POST_COMMAND_DELAYS[prot.RPLidarCommand.STOP])
+
+        # Clear the transport layer's internal buffer to ensure no residual data remains.
+        self._synchronize_transport_buffers()
+
+    def _best_effort_stop(self) -> RPLidarConnectionError | RPLidarTimeoutError | None:
+        """
+        Attempt to stop the RPLIDAR without interrupting cleanup.
+
+        Returns:
+            The translated STOP exception if stopping fails.
+            Otherwise, returns None.
+        """
+
+        try:
+            self._request_stop()
+
+        except TransportConnectionError as exc:
+            return RPLidarConnectionError(f"Communication failed during STOP: {exc}")
+        except TransportTimeoutError as exc:
+            return RPLidarTimeoutError(f"Communication timed out during STOP: {exc}")
+
+        finally:
+            self._clear_scanning_state()
+
+        return None
 
     @property
     def scanning_state(self) -> prot.RPLidarScanningState:

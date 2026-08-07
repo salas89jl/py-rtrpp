@@ -1,10 +1,11 @@
-from src.rtrpp.sensors.rplidar.driver import RPLidarDriver
-from src.rtrpp.sensors.rplidar.protocol import (
+from rtrpp.sensors.rplidar.driver import RPLidarDriver
+from tests.sensors.rplidar.driver.conftest import FakeTransport
+
+from rtrpp.sensors.rplidar.protocol import (
     RPLidarWorkingState,
     RPLidarScanningMode,
     RPLidarResponseType,
 )
-
 
 def assert_not_connected_invariants(
     driver: RPLidarDriver,
@@ -54,3 +55,10 @@ def assert_scanning_invariants(
 
     pending = driver._pending_measurement
     assert pending is None or pending.start_flag is True
+
+def assert_transport_untouched(
+        transport: FakeTransport,
+):
+    assert transport.open_count == 0
+    assert transport.close_count == 0
+    assert transport.written == b""
