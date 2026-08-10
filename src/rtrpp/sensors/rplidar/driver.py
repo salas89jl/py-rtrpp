@@ -36,6 +36,7 @@ class RPLidarDriver:
             is_active=False,
             packet_size=0,
             mode=prot.RPLidarScanningMode.INACTIVE,
+            completed_scan_count=0,
         )
 
         # Initialize the health of the RPLIDAR device.
@@ -49,9 +50,13 @@ class RPLidarDriver:
     def get_info(self) -> prot.RPLidarGetInfoData:
         """Sends GET_INFO command to the RPLIDAR device and returns parsed response object."""
 
+        # Validate working state before sending the GET_INFO request.
+        self._require_state_in(
+            prot.RPLidarWorkingState.IDLE, 
+            prot.RPLidarWorkingState.PROTECTION_STOP
+        )
+        
         try:
-            # Validate working state before sending the GET_INFO request.
-            self._require_state(prot.RPLidarWorkingState.IDLE)
 
             # Send the GET_INFO request to the RPLIDAR device.
             self._send_request(prot.RPLidarCommand.GET_INFO)
@@ -72,15 +77,18 @@ class RPLidarDriver:
             return prot.parse_get_info_response(raw_data)
 
         except ValueError as exc:
+            self._recover_from_query_transaction_error()
             raise RPLidarProtocolError(
                 f"GET_INFO returned an invalid protocol response. {exc}"
             ) from exc
 
         except TransportTimeoutError as exc:
+            self._recover_from_query_transaction_error()
             raise RPLidarTimeoutError(
                 f"Timed out while waiting for the GET_INFO response. {exc}"
             ) from exc
         except TransportConnectionError as exc:
+            self._recover_from_connection_error()
             raise RPLidarConnectionError(f"Communication failed during GET_INFO. {exc}") from exc
 
     def get_health(self) -> prot.RPLidarGetHealthData:
@@ -402,13 +410,13 @@ class RPLidarDriver:
 
         if descriptor.send_mode != expected_send_mode.value:
             raise ValueError(
-                f"{operation} expected send mode {expected_send_mode}, "
+                f"{operation} expected send mode {expected_send_mode.value}, "
                 f"but got {descriptor.send_mode}."
             )
 
         if descriptor.data_type != expected_data_type.value:
             raise ValueError(
-                f"{operation} expected data type {expected_data_type}, "
+                f"{operation} expected data type {expected_data_type.value}, "
                 f"but got {descriptor.data_type}."
             )
 

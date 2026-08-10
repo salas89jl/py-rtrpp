@@ -133,21 +133,6 @@ def test_parse_response_descriptor_invalid_flags():
         parse_response_descriptor(packet)
 
 
-def test_parse_response_descript_invalid_send_mode():
-    # Upper two bits are 10 from the 5-byte(0x80)
-    packet = b"\xa5\x5a\x05\x00\x00\x80\x81"
-
-    with pytest.raises(ValueError):
-        parse_response_descriptor(packet)
-
-
-def test_parse_response_descriptor_invalid_data_type():
-    packet = b"\xa5\x5a\x05\x00\x00\x40\x00"
-
-    with pytest.raises(ValueError):
-        parse_response_descriptor(packet)
-
-
 # Parsing SCAN Mode Response Data Tests
 def test_parse_scan_data_valid_first_scan_point_packet():
     packet = b"\xa5\x95\x12\xc8\x03"

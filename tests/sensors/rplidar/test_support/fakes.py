@@ -41,7 +41,7 @@ class FakeTransport:
 
         if self.fail_close is not None:
             raise self.fail_close
-        
+
         self.is_open = False
 
     def write(self, data: bytes) -> bytes:
@@ -101,5 +101,26 @@ def queue_get_health_response(
 ) -> None:
     descriptor = b"\xa5\x5a\x03\x00\x00\x00\x06"
     payload = bytes([status, error_code & 0xFF, (error_code >> 8) & 0xFF])
+
+    transport.responses.extend([descriptor, payload])
+
+
+def queue_get_info_response(
+    transport: FakeTransport,
+    *,
+    model: int = 0,
+    firmware_version_minor: int = 0,
+    firmware_version_major: int = 0,
+    hardware_version: int = 0,
+    serial_number: bytes | None = None
+) -> None:
+    descriptor = b"\xa5\x5a\x14\x00\x00\x00\x04"
+    payload = bytes([model, firmware_version_minor, firmware_version_major, hardware_version])
+
+    if serial_number is not None:
+        payload += serial_number
+    else:
+        payload += bytes([*range(16)])
+
 
     transport.responses.extend([descriptor, payload])
