@@ -12,13 +12,15 @@ One way to achieve simulating hardware behavior is by building your own mock cla
 ```python
 import serial
 
+
 class MockTransport:
-    """ A mock transport class that simulates the behavior of the RPLidarTransport class for testing purposes. """
+    """A mock transport class that simulates the behavior of the RPLidarTransport class for testing purposes."""
+
     def __init__(
-            self,
-            responses: list[bytes] | None = None,
-            fail_on_write: bool = False, 
-            fail_on_read: bool = False,
+        self,
+        responses: list[bytes] | None = None,
+        fail_on_write: bool = False,
+        fail_on_read: bool = False,
     ):
         self.responses = list(responses or [])
         self.fail_on_write = fail_on_write
@@ -28,25 +30,26 @@ class MockTransport:
     def write(self, data) -> int:
         if self.fail_on_write:
             raise serial.SerialException("Simulated write failure.")
-        
+
         self.written += data
         return len(data)
-    
+
     def read(self, size: int) -> bytes:
         if self.fail_on_read:
             raise serial.SerialException("Simulated read failure.")
-        
+
         if not self.responses:
             return b""
-        
+
         response = self.responses.pop(0)
         return response[:size]
 
+
 class OSErrorTransport:
     def __init__(
-            self,
-            fail_on_write: bool = False,
-            fail_on_read: bool = False,
+        self,
+        fail_on_write: bool = False,
+        fail_on_read: bool = False,
     ):
         self.fail_on_write = fail_on_write
         self.fail_on_read = fail_on_read
@@ -54,7 +57,7 @@ class OSErrorTransport:
     def write(self, data: bytes) -> int:
         if self.fail_on_write:
             raise OSError("Simulated device disconnection.")
-    
+
     def read(self, size: int) -> bytes:
         if self.fail_on_read:
             raise OSError("Simulated device disconnection.")
@@ -90,7 +93,7 @@ __Creating a mock transport object:__
 from unittest.mock import Mock
 
 # Create a mock transport object
-mock_transport = Mock() 
+mock_transport = Mock()
 ```
 
 __Verifying Method Calls:__
@@ -102,14 +105,16 @@ driver = RPLidarDriver(transport=mock_transport)
 # Call the get_info() method
 driver.get_info()
 
-mock_transport.write.assert_called_once_with (b'\xA5\x50')  # Verify that the write method was called with the correct command
+mock_transport.write.assert_called_once_with(
+    b"\xa5\x50"
+)  # Verify that the write method was called with the correct command
 mock_transport.read.assert_called_once()  # Verify that the read method was called once
 ```
 __Returning Predefined Responses:__ We can configure the mock transport object to return specific responses when its methods are called. For example, we can set up the `read` method to return a predefined response for the `get_info()` method. Without having to write a custom mock class such as `MockTransport`, we can use the `return_value` attribute of the mock object to specify what should be returned when the method is called.
 
 ```python
 # Configure the mock transport to return a predefined response for get_info()
-mock_transport.read.return_value = b'\x00\x01\x02\x03'  # This is a placeholder for the actual response bytes that would be returned by the hardware.
+mock_transport.read.return_value = b"\x00\x01\x02\x03"  # This is a placeholder for the actual response bytes that would be returned by the hardware.
 ```
 
 __Side Effects:__ The `side_effect` attribute allows you to specify a function or an iterable that will be called or returned when the mock is called. This is useful for simulating different behaviors, such as raising exceptions or returning different values on subsequent calls.
@@ -117,6 +122,7 @@ __Side Effects:__ The `side_effect` attribute allows you to specify a function o
 __Raising Exceptions:__
 ```python
 import serial
+
 mock_transport.write.side_effect = serial.SerialException("Simulated write failure.")
 ```
 __Multiple Return Values:__
@@ -124,17 +130,16 @@ Since `driver.get_info()` may call `transport.read()` multiple times, we can use
 
 ```python
 # Returns different values on subsequent calls
-mock_transport.read.side_effect = [
-    descriptor_response, 
-    data_response
-]  
+mock_transport.read.side_effect = [descriptor_response, data_response]
 ```
 
 __Asserting Calls:__ The `assert_called_with()` and `assert_called_once_with()` methods allow you to verify that the mock was called with specific arguments. This is useful for ensuring that your code is interacting with the mock as expected, since `Mocks` remembers how they were used. You can also use `assert_called()` and `assert_not_called()` to check if the mock was called at all.
 
 ```python
-mock_transport.write.assert_called_once_with(b'\xA5\x50') # Verify that the write method was called with the correct command
-mock_transport.read.assert_called_once() # Verify that the read method was called once
+mock_transport.write.assert_called_once_with(
+    b"\xa5\x50"
+)  # Verify that the write method was called with the correct command
+mock_transport.read.assert_called_once()  # Verify that the read method was called once
 ```
 
 __call_count:__ The `call_count` attribute allows you to check how many times the mock was called. This is useful for verifying that your code is making the expected number of calls to the mock.
@@ -148,7 +153,7 @@ __call_args__: The `call_args` attribute allows you to inspect the arguments tha
 
 ```python
 mock_transport.write.call_args  # Returns the arguments that were passed to the write method during its last call
-assert mock_transport.write.call_args == ((b'\xA5\x50')) 
+assert mock_transport.write.call_args == (b"\xa5\x50")
 ```
 Or suppose you want to know what packet was written to the transport layer during the last call, you can print the `call_args` attribute to see the arguments that were passed to the mock during its last call. This can be useful for debugging and verifying that your code is interacting with the mock as expected.
 
@@ -161,8 +166,8 @@ __call_args_list__: The `call_args_list` attribute allows you to inspect the arg
 ```python
 mock_transport.write.call_args_list  # Returns a list of all the arguments that were passed to the write method during all of its calls
 assert mock_transport.write.call_args_list == [
-    call(b'\xA5\x25'),
-    call(b'\xA5\x50'),
+    call(b"\xa5\x25"),
+    call(b"\xa5\x50"),
 ]
 ```
 This is useful for testing scenarios such as scan start/stop.
@@ -173,12 +178,12 @@ Suppose the `RPLidarDriver` class has a method that is defined with a `time.slee
 ```python
 from unittest.mock import patch
 
-@patch(
-    "rtrpp.sensors.rplidar.driver.time.sleep", return_value=None
-)
+
+@patch("rtrpp.sensors.rplidar.driver.time.sleep", return_value=None)
 def test_stop(mock_sleep):
     driver = RPLidarDriver(transport=mock_transport)
     driver.stop()
-    mock_sleep.assert_called_once_with(0.001)  # Verify that time.sleep() was called once with the expected argument
-
+    mock_sleep.assert_called_once_with(
+        0.001
+    )  # Verify that time.sleep() was called once with the expected argument
 ```

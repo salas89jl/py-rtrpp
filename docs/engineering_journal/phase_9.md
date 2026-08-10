@@ -18,54 +18,44 @@ The KITTI dataset provides LiDAR frames at a frame rate of 10 Hz, which means th
 
 ### Step 1: Implement Velocity Calculation in Track Class
 ```python
-    def compute_velocity(
-            self, 
-            dt=0.1
-    ):
-        # Check if there are at least two center positions in the history to compute velocity
-        if len(self.history) < 2:
-            return 0.0
-        
-        # Retrieve the last two center positions from the history
-        previous_center = self.history[-2]
-        current_center = self.history[-1]
+def compute_velocity(self, dt=0.1):
+    # Check if there are at least two center positions in the history to compute velocity
+    if len(self.history) < 2:
+        return 0.0
 
-        # Using only x and y from each of the center calculate displacement
-        displacement = np.linalg.norm(
-            current_center[:2] - previous_center[:2]
-        )
+    # Retrieve the last two center positions from the history
+    previous_center = self.history[-2]
+    current_center = self.history[-1]
 
-        # Calculate velocity as displacement over time
-        velocity = displacement / dt
-        
-        return velocity
+    # Using only x and y from each of the center calculate displacement
+    displacement = np.linalg.norm(current_center[:2] - previous_center[:2])
+
+    # Calculate velocity as displacement over time
+    velocity = displacement / dt
+
+    return velocity
 ```
 
 ### Step 2: Implement Average Velocity Calculation in Track Class
 ```python
-    def compute_average_velocity(
-            self, 
-            dt=0.1
-    ):
-        if len(self.history) < 2:
-            return 0.0
-        
-        # Retrieve the first and last center positions from the history
-        first_center = self.history[0]
-        last_center = self.history[-1]
+def compute_average_velocity(self, dt=0.1):
+    if len(self.history) < 2:
+        return 0.0
 
-        # Using only x and y from each of the center calculate total displacement
-        total_displacement = np.linalg.norm(
-            last_center[:2] - first_center[:2]
-        )
+    # Retrieve the first and last center positions from the history
+    first_center = self.history[0]
+    last_center = self.history[-1]
 
-        # Calculate total time elapsed based on number of frames
-        total_time = (len(self.history) - 1) * dt
+    # Using only x and y from each of the center calculate total displacement
+    total_displacement = np.linalg.norm(last_center[:2] - first_center[:2])
 
-        # Calculate average velocity as total displacement over total time
-        average_velocity = total_displacement / total_time
-        
-        return average_velocity
+    # Calculate total time elapsed based on number of frames
+    total_time = (len(self.history) - 1) * dt
+
+    # Calculate average velocity as total displacement over total time
+    average_velocity = total_displacement / total_time
+
+    return average_velocity
 ```
 
 ### Step 3: Update run_phase_9.py to Compute and Print Velocities
@@ -79,7 +69,7 @@ for track in tracker.tracks.values():
         f"{track.detection.classification} | "
         f"Speed={speed:.2f} m/s | "
         f"Avg Speed={avg_speed:.2f} m/s | "
-        f"History={len(track.history)}"       
+        f"History={len(track.history)}"
     )
 ```
 
@@ -149,9 +139,7 @@ from pathlib import Path
 
 tracker = SimpleTracker()
 
-frame_files = sorted(
-    Path("datasets/kitti").glob("*bin")
-)
+frame_files = sorted(Path("datasets/kitti").glob("*bin"))
 
 frames = []
 
@@ -167,28 +155,24 @@ for frame_idx, file_path in enumerate(frame_files):
     for detection in detections:
         bbox = detection.bbox
         bbox.color = [1, 0, 0]
-        boxes.append(bbox)   
+        boxes.append(bbox)
 
-    frames.append({
-        "pcd": pcd,
-        "boxes": boxes
-    })
+    frames.append({"pcd": pcd, "boxes": boxes})
 
     for track in tracked_objects:
         speed = track.compute_velocity(dt=0.1)
         avg_speed = track.compute_average_velocity(dt=0.1)
 
         if len(track.history) > 9:
-                
             print(
                 f"Track {track.track_id} | "
                 f"{track.detection.classification} | "
                 f"Speed={speed:.2f} m/s | "
                 f"Avg Speed={avg_speed:.2f} m/s | "
-                f"History={len(track.history)}"       
+                f"History={len(track.history)}"
             )
 
-    
+
 animate_frames_with_boxes(frames, delay=0.3)
 ```
 __Note:__ The `pipeline.py` file was reconfigured to return both the object points and the detections one single frame at a time. This is to ensure that we can visualize the bounding boxes for each frame along with the point cloud data. 
@@ -367,29 +351,26 @@ Although, the average speeds for the unknown objects are reasonable, the instant
 Since, each track contains a history of the center positions, we can enhance the average velocity estimation by computing the average over all frame-to-frame displacements, rather than just the first and last positions. This would provide a more robust estimate of the average speed, especially for tracks with longer histories.
 
 ```python
-    def compute_average_velocity(
-            self, 
-            dt=0.1
-    ):
-        if len(self.history) < 2:
-            return 0.0
-        
-        total_displacement = 0.0
+def compute_average_velocity(self, dt=0.1):
+    if len(self.history) < 2:
+        return 0.0
 
-        # Compute the total displacement over all frame-to-frame displacements
-        for i in range(1, len(self.history)):
-            previous_center = self.history[i - 1]
-            current_center = self.history[i]
-            displacement = np.linalg.norm(current_center[:2] - previous_center[:2])
-            total_displacement += displacement
+    total_displacement = 0.0
 
-        # Calculate total time elapsed based on number of frames
-        total_time = (len(self.history) - 1) * dt
+    # Compute the total displacement over all frame-to-frame displacements
+    for i in range(1, len(self.history)):
+        previous_center = self.history[i - 1]
+        current_center = self.history[i]
+        displacement = np.linalg.norm(current_center[:2] - previous_center[:2])
+        total_displacement += displacement
 
-        # Calculate average velocity as total displacement over total time
-        average_velocity = total_displacement / total_time
-        
-        return average_velocity
+    # Calculate total time elapsed based on number of frames
+    total_time = (len(self.history) - 1) * dt
+
+    # Calculate average velocity as total displacement over total time
+    average_velocity = total_displacement / total_time
+
+    return average_velocity
 ```
 
 This updated method measures the actual path taken by the object, rather than just the straight-line distance between the first and last points. This should provide a more accurate representation of the object's average speed, especially for objects that may have changed direction or speed during the tracking period.

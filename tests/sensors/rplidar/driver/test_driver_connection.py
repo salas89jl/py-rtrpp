@@ -94,7 +94,6 @@ def test_connect_raises_state_error_with_invalid_starting_state(idle_driver):
 
     assert_idle_invariants(driver)
     assert_transport_untouched(transport)
-   
 
 
 # connect - initialization failures
@@ -179,23 +178,17 @@ def test_connect_health_connection_error_restores_not_connected(
 
     assert_not_connected_invariants(driver)
 
+
 def test_connect_raises_state_error_with_repeated_connects(
-        not_connected_driver,
+    not_connected_driver,
 ):
     driver, transport = not_connected_driver
 
-    queue_get_health_response(
-        transport,
-        status=0,
-        error_code=0x1234
-    )
+    queue_get_health_response(transport, status=0, error_code=0x1234)
 
     driver.connect()
 
-    with pytest.raises(
-        RPLidarStateError, 
-        match="requires working state NOT_CONNECTED"
-    ):
+    with pytest.raises(RPLidarStateError, match="requires working state NOT_CONNECTED"):
         driver.connect()
 
     assert_idle_invariants(driver)
@@ -242,10 +235,10 @@ def test_disconnect_closes_from_scanning_state(scanning_driver):
 
     driver.disconnect()
 
-
     assert transport.close_count == 1
     assert transport.written == bytes([0xA5, RPLidarCommand.STOP.value])
     assert_not_connected_invariants(driver)
+
 
 def test_disconnect_closes_from_protection_stop(protection_stop_driver):
     driver, transport = protection_stop_driver
@@ -255,8 +248,9 @@ def test_disconnect_closes_from_protection_stop(protection_stop_driver):
     assert_not_connected_invariants(driver)
     assert transport.close_count == 1
 
+
 def test_disconnect_closes_with_repeated_disconnects(
-        scanning_driver,
+    scanning_driver,
 ):
     driver, transport = scanning_driver
 
@@ -266,6 +260,7 @@ def test_disconnect_closes_with_repeated_disconnects(
     assert_not_connected_invariants(driver)
     assert transport.written == bytes([0xA5, RPLidarCommand.STOP.value])
     assert transport.close_count == 2
+
 
 # disconnect - cleanup failures and precedence
 def test_disconnect_closes_when_best_effort_stop_fails(scanning_driver):
@@ -280,6 +275,7 @@ def test_disconnect_closes_when_best_effort_stop_fails(scanning_driver):
     assert transport.is_open is False
     assert transport.close_count == 1
 
+
 def test_disconnect_closes_when_best_effort_stop_timesout(scanning_driver):
     driver, transport = scanning_driver
 
@@ -289,7 +285,7 @@ def test_disconnect_closes_when_best_effort_stop_timesout(scanning_driver):
         driver.disconnect()
 
     assert_not_connected_invariants(driver)
-    
+
 
 def test_disconnect_close_failure_restores_logical_state_from_scanning(scanning_driver):
 
@@ -309,7 +305,7 @@ def test_disconnect_close_failure_restores_logical_state_from_scanning(scanning_
         driver.disconnect()
 
     assert_not_connected_invariants(driver)
-    
+
 
 def test_disconnect_close_failure_restores_logical_state(idle_driver):
     driver, transport = idle_driver

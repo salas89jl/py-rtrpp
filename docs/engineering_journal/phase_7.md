@@ -34,41 +34,21 @@ Here is a simple implementation of the classification function in Python we will
 def classify_object_simple(length, width, height):
 
     # Car
-    if (
-        3.0 <= length <= 6.0 and
-        1.5 <= width <= 3.0 and 
-        1.0 <= height <= 3.0 
-    ): 
+    if 3.0 <= length <= 6.0 and 1.5 <= width <= 3.0 and 1.0 <= height <= 3.0:
         return "Car"
-    elif (
-        1.5 <= length <= 3.0 and
-        3.0 <= width <= 6.0 and 
-        1.0 < height <= 3.0
-    ):  
+    elif 1.5 <= length <= 3.0 and 3.0 <= width <= 6.0 and 1.0 < height <= 3.0:
         return "Car"
-    
+
     # Pedestrian
-    elif (
-        length < 1.5 and 
-        width < 1.5 and 
-        1.2 <= height <= 2.5
-    ):
+    elif length < 1.5 and width < 1.5 and 1.2 <= height <= 2.5:
         return "Pedestrian"
-    
-    # Cyclist  
-    elif (
-        1.5 <= length <= 2.0 and 
-        0.5 <= width <= 1.0 and 
-        1.0 <= height <= 2.5 
-    ):
+
+    # Cyclist
+    elif 1.5 <= length <= 2.0 and 0.5 <= width <= 1.0 and 1.0 <= height <= 2.5:
         return "Cyclist"
-    elif (
-        0.5 <= length <= 1.0 and
-        1.5 <= width <= 2.0 and 
-        1.0 <= height <= 2.5
-    ):
+    elif 0.5 <= length <= 1.0 and 1.5 <= width <= 2.0 and 1.0 <= height <= 2.5:
         return "Cyclist"
-    
+
     return "Unknown"
 ```
 Note that the classification rules are not perfect and may need to be adjusted based on the specific dataset and the types of objects present. Additionally, this simple rule-based classifier may not perform well in all cases, especially when there is significant overlap in the size characteristics of different object types. In future phases, we can explore more advanced classification techniques, such as machine learning-based classifiers, to improve the accuracy of object classification.
@@ -77,26 +57,22 @@ Note that the classification rules are not perfect and may need to be adjusted b
 To integrate the `classify_object_simple` function into the existing pipeline, we will modify the part of the code where we calculate the size characteristics of each cluster box. After calculating the length, width, and height for each cluster, we will call the `classify_object_simple` function to determine the object type and store this information for later analysis and visualization.
 
 ```python
-    # Compute the bounding box dimensions for analysis
-    box = compute_bounding_box(cluster_points)
+# Compute the bounding box dimensions for analysis
+box = compute_bounding_box(cluster_points)
 
-    # classify all of the object clusters based on box dimensions
-    classified_objects = classify_object_simple(
-        box["length"],
-        box["width"],
-        box["height"]
-    )
+# classify all of the object clusters based on box dimensions
+classified_objects = classify_object_simple(box["length"], box["width"], box["height"])
 
-    # Print clasification
-    center = bbox.get_center()
+# Print clasification
+center = bbox.get_center()
 
-    print(
-        f"Cluster {cluster_id}: {label} | "
-        f"Center=({center[0]:.2f}, {center[1]:.2f}, {center[2]:.2f}) | "
-        f"L={box['length']:.2f}, "
-        f"W={box['width']:.2f}, "
-        f"H={box['height']:.2f}"
-    )
+print(
+    f"Cluster {cluster_id}: {label} | "
+    f"Center=({center[0]:.2f}, {center[1]:.2f}, {center[2]:.2f}) | "
+    f"L={box['length']:.2f}, "
+    f"W={box['width']:.2f}, "
+    f"H={box['height']:.2f}"
+)
 ```
 ## Step 3: Testing the Classifier
 After integrating the classifier into the pipeline and running it on the existing dataset, we can analyze the results to see how well it performs in classifying different objects.

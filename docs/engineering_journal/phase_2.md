@@ -25,6 +25,7 @@ An example of KITTI point cloud data set can be found in the following link: [KI
 ```python
 import numpy as np
 
+
 def load_kitti_bin(file_path):
     """
     KITTI Velodyne .bin files store points as:
@@ -58,7 +59,6 @@ The function `load_kitti_point_cloud` takes a file path as input, which points t
 ## Step 3: Create run_phase2.py to Load and Visualize the Point Cloud
 Next, we can create a run_phase2.py file that will use the load_kitti.py file to load the point cloud data and then use the plot_utils.py file to visualize it.
 ```python
-
 from src.load_kitti import load_kitti_bin
 from src.plot_utils import plot_2d_points
 
@@ -80,7 +80,7 @@ print("Shape:", points.shape)
 print("Frist 5 points: ")
 print(points[5])
 
-plot_2d_points(x, y,"KITTI LiDAR Scan: Top-Down View")
+plot_2d_points(x, y, "KITTI LiDAR Scan: Top-Down View")
 ```
 
 ### Understanding the Data:
@@ -173,7 +173,8 @@ distance = sqrt(x^2 + y^2 + z^2)
 
 ```python
 import numpy as np
-from src.load_kitti import load_kitti_bin   
+from src.load_kitti import load_kitti_bin
+
 file_path = "datasets/kitti/0000000000.bin"
 points = load_kitti_bin(file_path)
 x = points[:, 0]
@@ -196,6 +197,7 @@ In this example, the closest point in the point cloud is approximately 1.46 mete
 We can also create a histogram of the distances to visualize the distribution of points in terms of their distance from the LiDAR sensor. This can help us understand how many points are close to the sensor and how many are far away.
 ```python
 import matplotlib.pyplot as plt
+
 plt.hist(distances, bins=50, range=(0, 80))
 plt.title("Histogram of Distances from LiDAR Sensor")
 plt.xlabel("Distance (meters)")
@@ -212,13 +214,15 @@ To visualize the point cloud data in 3D, we can use the Open3D library, which pr
 
 ```python
 import open3d as o3d
+
+
 def visualize_point_cloud(points):
     # Create an Open3D point cloud object
     pcd = o3d.geometry.PointCloud()
-    
+
     # Set the points of the point cloud
     pcd.points = o3d.utility.Vector3dVector(points)
-    
+
     # Visualize the point cloud
     o3d.visualization.draw_geometries([pcd])
 ```

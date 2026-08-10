@@ -46,13 +46,13 @@ classDiagram
 from rtrpp.sensors.rplidar.transport import RPLidarTransport
 
 transport = RPLidarTransport(port)
-transport.open() # Open the serial connection to the RPLIDAR device
+transport.open()  # Open the serial connection to the RPLIDAR device
 
-raw_command = b'\xA5\x20'  # Example command to start scanning
+raw_command = b"\xa5\x20"  # Example command to start scanning
 transport.write(raw_command)  # Example command to start scanning
 response = transport.read(7)  # Read the response descriptor
 
-transport.close() # Close the serial connection to the RPLIDAR device
+transport.close()  # Close the serial connection to the RPLIDAR device
 ```
 
 ## Future Extensions

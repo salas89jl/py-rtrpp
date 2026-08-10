@@ -26,18 +26,20 @@ In the KiTTi dataset, that we were working with contained a toltal of 122,160 po
 
 ```python
 import open3d as o3d
+
+
 def visualize_point_cloud(points, voxel_size=0.2):
     # Create an Open3D point cloud object
     pcd = o3d.geometry.PointCloud()
     pcd.points = o3d.utility.Vector3dVector(points)
-    
+
     # Downsample the point cloud using a voxel grid filter
     if voxel_size > 0:
         pcd = pcd.voxel_down_sample(voxel_size=voxel_size)  # Adjust voxel size as needed
-    
+
     # Visualize the downsampled point cloud
     o3d.visualization.draw_geometries(
-        [pcd], 
+        [pcd],
         window_name="LiDAR Point Cloud Visualization",
     )
 ```
@@ -64,9 +66,12 @@ To filter the point cloud based on this ROI, we can use the following code that 
 def filter_roi(points, x_range=(0, 40), y_range=(-20, 20), z_range=(-2, 2)):
     # Create a mask to filter points within the specified ROI
     mask = (
-        (points[:, 0] >= x_range[0]) & (points[:, 0] <= x_range[1]) &
-        (points[:, 1] >= y_range[0]) & (points[:, 1] <= y_range[1]) &
-        (points[:, 2] >= z_range[0]) & (points[:, 2] <= z_range[1])
+        (points[:, 0] >= x_range[0])
+        & (points[:, 0] <= x_range[1])
+        & (points[:, 1] >= y_range[0])
+        & (points[:, 1] <= y_range[1])
+        & (points[:, 2] >= z_range[0])
+        & (points[:, 2] <= z_range[1])
     )
     return points[mask]
 ```
@@ -81,28 +86,28 @@ In addition to downsampling and filtering the point cloud, we can also remove ou
 To remove outliers, we can use a statistical outlier removal method that identifies and removes points that are significantly different from their neighbors. This can be done using the following code:
 
 ```python
-def visualize_point_cloud_with_outliers_removed(xyz, nb_neighbors=20, std_ratio=2.0, voxel_size=None):
+def visualize_point_cloud_with_outliers_removed(
+    xyz, nb_neighbors=20, std_ratio=2.0, voxel_size=None
+):
     """
     Visualize the point cloud with outliers removed using Open3D.
     """
     pcd = o3d.geometry.PointCloud()
     pcd.points = o3d.utility.Vector3dVector(xyz)
-    
+
     # Remove outliers using statistical outlier removal
     pcd, _ = pcd.remove_statistical_outlier(nb_neighbors=nb_neighbors, std_ratio=std_ratio)
-    
+
     if voxel_size is not None and voxel_size > 0:
-        pcd = pcd.voxel_down_sample(voxel_size=voxel_size) # Downsample the point cloud for faster visualization
-        print(
-            "Points after downsampling:", 
-            len(pcd.points)
-        )
-    
+        pcd = pcd.voxel_down_sample(
+            voxel_size=voxel_size
+        )  # Downsample the point cloud for faster visualization
+        print("Points after downsampling:", len(pcd.points))
+
     o3d.visualization.draw_geometries(
-        [pcd], 
+        [pcd],
         window_name="LiDAR Point Cloud Visualization (Outliers Removed)",
     )
-    
 ```
 
 <img src="../images/ph3_3d_outliersRemoved.png" alt="Outliers Removed Point Cloud Visualization" width="600">

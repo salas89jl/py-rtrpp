@@ -27,6 +27,7 @@ __coordinates.py__
 ```python
 import numpy as np
 
+
 def polar_to_caresian(r, theta):
     x = r * np.cos(theta)
     y = r * np.sin(theta)
@@ -38,6 +39,7 @@ Next we can create a file named synthetic_scan.py that will use the coordinates.
 ```python
 import numpy as np
 
+
 def generate_circle_scan(r, num_points):
     theta = np.linspace(0, 2 * np.pi, num_points)
     x, y = polar_to_caresian(r, theta)
@@ -48,6 +50,8 @@ Next we can create a file named visualize.py that will be responsible for visual
 
 ```python
 import matplotlib.pyplot as plt
+
+
 def plot_2d_points(x, y, title):
     plt.scatter(x, y, s=5)
     plt.axis("equal")

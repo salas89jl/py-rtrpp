@@ -202,10 +202,10 @@ __PROTECTION_STOP Driver State:__
 from rtrpp.sensors.rplidar.driver import RPLidarDriver
 from rtrpp.sensors.rplidar.transport import RPLidarTransport
 
-transport = RPLidarTransport(port='/dev/ttyUSB0')
+transport = RPLidarTransport(port="/dev/ttyUSB0")
 
 try:
-    transport.open() # Open the serial connection to the RPLIDAR device
+    transport.open()  # Open the serial connection to the RPLIDAR device
     driver = RPLidarDriver(transport)
 
     info = driver.get_info()  # Retrieve device information
@@ -213,8 +213,7 @@ try:
     samplerate = driver.get_samplerate()  # Retrieve device sample rate
 
 finally:
-    transport.close() # Close the serial connection to the RPLIDAR device   
-
+    transport.close()  # Close the serial connection to the RPLIDAR device
 ```
 
 

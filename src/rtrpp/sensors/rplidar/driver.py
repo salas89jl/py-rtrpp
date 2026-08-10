@@ -272,7 +272,7 @@ class RPLidarDriver:
 
         except TransportConnectionError as exc:
             close_error = RPLidarConnectionError(f"Tranport failed to close: {exc}")
-            
+
         finally:
             self._clear_scanning_state()
             self._working_state = prot.RPLidarWorkingState.NOT_CONNECTED

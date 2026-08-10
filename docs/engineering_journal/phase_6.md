@@ -38,7 +38,7 @@ def compute_bounding_box(cluster_points):
     zmax = np.max(cluster_points[:, 2])
 
     # Return the bounding box dimensions as a dictionary
-    return { 
+    return {
         "xmin": round(xmin, 6),
         "xmax": round(xmax, 6),
         "ymin": round(ymin, 6),
@@ -105,14 +105,14 @@ def create_bounding_boxes(object_points, labels):
         # Skip clusters with too few points to avoid noise
         if len(cluster_points) < 20:
             continue
-        
+
         # Create a point cloud object for the current cluster
         pcd_cluster = o3d.geometry.PointCloud()
         pcd_cluster.points = o3d.utility.Vector3dVector(cluster_points)
 
         # Compute the axis-aligned bounding box for the current cluster
         bbox = pcd_cluster.get_axis_aligned_bounding_box()
-        bbox.color = [1, 0, 0] # Set bounding box color to red
+        bbox.color = [1, 0, 0]  # Set bounding box color to red
 
         # Compute the bounding box dimensions for analysis
         box = compute_bounding_box(cluster_points)
@@ -123,7 +123,6 @@ def create_bounding_boxes(object_points, labels):
         bounding_boxes.append(bbox)
 
     return bounding_boxes
-
 ```
 In this function, we iterate through each unique cluster label, create a point cloud object for the points in that cluster, and compute the axis-aligned bounding box. We also print the bounding box dimensions for each cluster for analysis. Finally, we return a list of bounding box objects that can be visualized along with the original point cloud data.
 
@@ -136,28 +135,29 @@ def visualize_with_bounding_boxes(labels, object_points, ground_points):
     num_clusters = labels.max() + 1
     noise_points = object_points[labels == -1]
 
-    # Assign a random color to each cluster 
+    # Assign a random color to each cluster
     colors = np.random.rand(num_clusters, 3)
     cluster_colors = np.zeros((len(labels), 3))
     for i, label in enumerate(labels):
         if label == -1:
-            cluster_colors[i] = [0, 0, 0] # Noise points in black
+            cluster_colors[i] = [0, 0, 0]  # Noise points in black
         else:
             cluster_colors[i] = colors[label]
-    
 
     # Create Open3D point clouds for the clustered object points
     object_pcd = o3d.geometry.PointCloud()
-    object_pcd.points = o3d.utility.Vector3dVector(object_points) # Set the points of the point cloud to the clustered object points
-    object_pcd.colors = o3d.utility.Vector3dVector(cluster_colors) # Set the colors of the point cloud to the assigned cluster colors
+    object_pcd.points = o3d.utility.Vector3dVector(
+        object_points
+    )  # Set the points of the point cloud to the clustered object points
+    object_pcd.colors = o3d.utility.Vector3dVector(
+        cluster_colors
+    )  # Set the colors of the point cloud to the assigned cluster colors
 
     # Create an array of axis-aligned bounding boxes for each cluster
     bounding_boxes = create_bounding_boxes(object_points, labels)
-   
+
     # Visualize the Open3d point clouds
-    o3d.visualization.draw_geometries(
-        [object_pcd] + bounding_boxes 
-    )
+    o3d.visualization.draw_geometries([object_pcd] + bounding_boxes)
 ```
 <img src="/images/ph6_3d_img_bbox.png" alt="3D Point Cloud with Bounding Boxes" width="600"/>
 

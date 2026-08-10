@@ -186,7 +186,7 @@ class RPLidarTransport:
     def clear_internal_buffer(self) -> None:
         """Clears the internal buffer used for reading data."""
         self._internal_buffer.clear()
-        
+
     @property
     def internal_buffer_size(self) -> int:
         """Returns the size of the internal buffer used for reading data."""

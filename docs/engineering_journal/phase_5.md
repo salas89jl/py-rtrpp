@@ -40,6 +40,7 @@ __Note__: An unsupervised learning model is a type of AI algorithm that learns p
 import numpy as np
 import open3d as o3d
 
+
 def cluster_objects(points, eps=0.7, min_points=10):
     """Cluster the input points using DBSCAN algorithm.
 
@@ -57,12 +58,7 @@ def cluster_objects(points, eps=0.7, min_points=10):
     pcd.points = o3d.utility.Vector3dVector(points)
 
     # Perform DBSCAN clustering
-    labels = np.array(
-        pcd.cluster_dbscan(
-            eps=eps, 
-            min_points=min_points
-        )
-    )
+    labels = np.array(pcd.cluster_dbscan(eps=eps, min_points=min_points))
 
     return labels
 ```
@@ -109,9 +105,7 @@ def extract_ground(points, distance_threshold=0.2, ransac_n=3, num_iterations=10
 
     # Perform RANSAC plane fitting
     plane_model, inliers = pcd.segment_plane(
-        distance_threshold=distance_threshold,
-        ransac_n=ransac_n,
-        num_iterations=num_iterations
+        distance_threshold=distance_threshold, ransac_n=ransac_n, num_iterations=num_iterations
     )
 
     # Extract ground and non-ground points
@@ -144,45 +138,23 @@ file_path = "datasets/kitti/0000000000.bin"
 
 points = load_kitti_bin(file_path)
 
-filtered_points = filter_roi(
-    points,
-    x_min=0,
-    x_max=40,
-    y_min=-20,
-    y_max=20,
-    z_min=-2,
-    z_max=2
-)
+filtered_points = filter_roi(points, x_min=0, x_max=40, y_min=-20, y_max=20, z_min=-2, z_max=2)
 
 print("Number of points after ROI filtering:", len(filtered_points))
 
-downsampled_points = downsample_point_cloud(
-    filtered_points[:, :3],
-    voxel_size=0.2
-)
+downsampled_points = downsample_point_cloud(filtered_points[:, :3], voxel_size=0.2)
 
 print("Points after downsampling:", len(downsampled_points))
 
-cleaned_points = remove_outliers(
-    downsampled_points,
-    nb_neighbors=20,
-    std_ratio=2.0
-)
+cleaned_points = remove_outliers(downsampled_points, nb_neighbors=20, std_ratio=2.0)
 
 print("Points after outlier removal:", len(cleaned_points))
 
 ground_points, object_points = extract_ground(
-    cleaned_points,
-    distance_threshold=0.2,
-    ransac_n=3,
-    num_iterations=1000
+    cleaned_points, distance_threshold=0.2, ransac_n=3, num_iterations=1000
 )
 
-labels = cluster_objects(
-    object_points,
-    eps=0.8,
-    min_points=15
-)
+labels = cluster_objects(object_points, eps=0.8, min_points=15)
 
 num_clusters = labels.max() + 1
 noise_points = np.sum(labels == -1)
@@ -208,7 +180,6 @@ Number of noise points: 220
 To visualize the clusters, you can use Open3D's visualization tools. Add the following code to the end of `run_phase_5.py`:
 
 ```python
-
 max_label = labels.max()
 
 colors = np.random.rand(max_label + 1, 3)
@@ -226,13 +197,11 @@ object_pcd.colors = o3d.utility.Vector3dVector(cluster_colors)
 
 ground_pcd = o3d.geometry.PointCloud()
 ground_pcd.points = o3d.utility.Vector3dVector(ground_points)
-ground_pcd.paint_uniform_color([0.5, 0.5, 0.5])  # Ground points in gray 
+ground_pcd.paint_uniform_color([0.5, 0.5, 0.5])  # Ground points in gray
 
 o3d.visualization.draw_geometries(
-    [ground_pcd, object_pcd], 
+    [ground_pcd, object_pcd],
     window_name="Phase 5: Object Clustering",
-
-    
 )
 ```
 ```text

@@ -29,9 +29,10 @@ import open3d as o3d
 
 from src.classification import classify_object_simple
 
+
 class Detection:
     # Constructor
-    def __init__(self, cluster_id, classification, center, bbox, length, width, height): 
+    def __init__(self, cluster_id, classification, center, bbox, length, width, height):
         self.cluster_id = cluster_id
         self.classification = classification
         self.center = center
@@ -43,7 +44,7 @@ class Detection:
 
     # String representation of the detection object
     def __str__(self):
-        return(
+        return (
             f"Cluster {self.cluster_id}: {self.classification} | "
             f"Center=({self.center[0]:.2f}, {self.center[1]:.2f}, {self.center[2]:.2f}) | "
             f"L={self.length:.2f}, W={self.width:.2f}, H={self.height:.2f}, "
@@ -65,12 +66,13 @@ Additionally, each track will have a method to update its attributes based on th
 ```python
 import numpy as np
 
+
 class Track:
     # Constructor
     def __init__(self, track_id, detection):
-        
+
         self.track_id = track_id
-        
+
         self.detection = detection
 
         self.center = detection.center
@@ -79,11 +81,10 @@ class Track:
         self.width = detection.width
         self.height = detection.height
 
-        self.history = [
-            detection.center
-        ]
+        self.history = [detection.center]
 
         self.frames_seen = 1
+
     # Update the track attributes based on the new detection and increment the frames_seen counter
     def update(self, detection):
         self.detection = detection
@@ -111,42 +112,25 @@ Additionally, the `SimpleTracker` class will have the following methods:
 ```python
 class SimpleTracker:
     # Constructor
-    def __init__(
-            self,
-            max_distance=2.0
-    ):
+    def __init__(self, max_distance=2.0):
         self.max_distance = max_distance
         self.next_track_id = 0
         self.tracks = {}
 
     # Calculate the normalized distance between a detection and a track based on their center coordinates
-    def distance(
-            self,
-            detection, 
-            track
-    ):
-        return np.linalg.norm(
-            detection.center[:2] - track.center[:2]
-        )
-    
-    # Create a new track for a detection that cannot be associated with any existing tracks
-    def create_track(
-            self, 
-            detection
-    ):
-        track = Track(
-            self.next_track_id,
-            detection
-        )
+    def distance(self, detection, track):
+        return np.linalg.norm(detection.center[:2] - track.center[:2])
 
-        self.tracks[
-            self.next_track_id
-        ] = track
+    # Create a new track for a detection that cannot be associated with any existing tracks
+    def create_track(self, detection):
+        track = Track(self.next_track_id, detection)
+
+        self.tracks[self.next_track_id] = track
 
         self.next_track_id += 1
 
         return track
-    
+
     # Update the active tracks based on the new detections in the current frame
     def update(self, detections):
         # Create a new dictionary to store the updated tracks and a set to keep track of used track IDs
@@ -155,9 +139,8 @@ class SimpleTracker:
 
         # Iterate through the detections and try to associate them with an existing track based on the distance and classification
         for detection in detections:
-    
             best_track_id = None
-            best_distance = float("inf") # Initialize the best distance to infinity
+            best_distance = float("inf")  # Initialize the best distance to infinity
 
             for track_id, track in self.tracks.items():
                 # Check if the track ID has already been used in this update cycle
@@ -166,15 +149,15 @@ class SimpleTracker:
                 # Check if the detection and track are compatible based on their classification
                 if not self.compatible(detection, track):
                     continue
-                
+
                 # Calculate the distance between the detection and the track
                 distance = self.distance(detection, track)
 
                 # Update the best track ID and best distance if the current distance is smaller than the best distance found so far
                 if distance < best_distance:
                     best_distance = distance
-                    best_track_id = track_id 
-            
+                    best_track_id = track_id
+
             # If a compatible track is found within the maximum distance, update the track with the new detection. Otherwise, create a new track for the detection.
             if best_track_id is not None and best_distance <= self.max_distance:
                 track = self.tracks[best_track_id]
@@ -187,7 +170,7 @@ class SimpleTracker:
                 track = self.create_track(detection)
                 updated_tracks[track.track_id] = track
                 self.next_track_id += 1
-        
+
         # Update the active tracks with the updated tracks and return the list of active tracks
         self.tracks = updated_tracks
 
@@ -198,13 +181,13 @@ class SimpleTracker:
     def compatible(self, detection, track):
         if detection.classification == track.detection.classification:
             return True
-        
+
         if detection.classification == "Unknown":
             return True
-        
+
         if track.detection.classification == "Unknown":
             return True
-        
+
         return False
 ```
 
@@ -291,95 +274,64 @@ from src.perception.segmentation import extract_ground
 from src.perception.clustering import cluster_objects
 from src.perception.bounding_boxes import detected_bounding_boxes
 
-def run_pipeline(
-        dir_path, 
-        tracker
-        ):
-    
-    frame_files = sorted(
-        Path(dir_path).glob("*bin")
-    )
-    
+
+def run_pipeline(dir_path, tracker):
+
+    frame_files = sorted(Path(dir_path).glob("*bin"))
+
     for frame_idx, file_path in enumerate(frame_files):
-        
         points = load_point_cloud(file_path)
-        
+
         # Filter specified region
         filtered_points = filter_roi(
-            points, 
-            x_min=0, x_max=40,
-            y_min=-20, y_max=20,
-            z_min=-2, z_max=2
+            points, x_min=0, x_max=40, y_min=-20, y_max=20, z_min=-2, z_max=2
         )
 
         # Downsample filtered region
-        downsampled = downsample_point_cloud(
-            filtered_points[:, :3],
-            voxel_size=0.2
-        )
+        downsampled = downsample_point_cloud(filtered_points[:, :3], voxel_size=0.2)
 
         # Remove outliers from downsampled points
-        cleaned_points = remove_outliers(
-            downsampled, 
-            nb_neighbors=20, 
-            std_ratio=2.0
-        )
+        cleaned_points = remove_outliers(downsampled, nb_neighbors=20, std_ratio=2.0)
 
         # Segment ground and non-ground points
         ground_points, object_points = extract_ground(
-            cleaned_points, 
-            distance_threshold=0.2,
-            ransac_n=3,
-            num_iterations=1000
+            cleaned_points, distance_threshold=0.2, ransac_n=3, num_iterations=1000
         )
 
         # Cluter non-ground points using DBSCAN
-        labels = cluster_objects(
-            object_points, 
-            eps=1.0,
-            min_points=13
-        )
+        labels = cluster_objects(object_points, eps=1.0, min_points=13)
 
         # Get list of detection objects created via bounding boxes
-        detections = detected_bounding_boxes(
-            object_points,
-            labels
-        )
+        detections = detected_bounding_boxes(object_points, labels)
 
         tracked_objects = tracker.update(detections)
 
-        
         tracked_objects = tracker.update(detections)
 
         # print current frames tracked objects in tracker
         print(f"\n===== Frame {frame_idx} =====")
         for track in tracked_objects:
-            print(track) 
+            print(track)
 
     # Print results of tracked objects from tracker
     print("\n===== FINAL TRACK SUMMARY =====")
     for tracks_id, track in tracker.tracks.items():
-
         print(
             f"Track {track.track_id} | "
             f"{track.detection.classification} | "
-            f"Frames Seen: {track.frames_seen} " 
+            f"Frames Seen: {track.frames_seen} "
         )
     return tracked_objects
-
 ```
 Now that we have the `run_pipeline` function, we will call it in the `run_phase_8.py` file, which will serve as the entry point for running the perception pipeline with tracking for this phase. The `run_phase_8.py` file will create a `SimpleTracker` object and pass it to the `run_pipeline` function along with the path to the KITTI dataset.
 
 ```python
 from src.core.tracker import SimpleTracker
-from src.perception.pipeline import run_pipeline    
+from src.perception.pipeline import run_pipeline
 
 tracker = SimpleTracker(max_distance=2.0)
 
-tracks = run_pipeline(
-    dir_path="data/kitti",
-    tracker=tracker
-)
+tracks = run_pipeline(dir_path="data/kitti", tracker=tracker)
 ```
 
 output:

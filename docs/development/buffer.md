@@ -398,6 +398,7 @@ from queue import Queue
 
 scan_queue: Queue[list[prot.RPLidarScanData]] = Queue(maxsize=3)
 
+
 # Publish the latest scan to the bounded scan queue, discarding the oldest if necessary.
 def publish_latest_scan(
     scan: list[prot.RPLidarScanData],
@@ -418,12 +419,14 @@ def publish_latest_scan(
     except Full:
         # Another producer filled it first.
         pass
-    
+
+
 # Acquisition thread
 def acquisition_thread(driver: Driver):
     while True:
         scan = driver.read_scan()
         scan_queue.put(scan)
+
 
 # Processing thread
 def processing_thread():
@@ -456,7 +459,7 @@ def acquisition_thread(driver: Driver):
         scan = driver.read_scan()
         if scan_queue.full():
             scan_queue.get()  # Discard the oldest scan
-        scan_queue.put_nowait(scan) # Non-blocking put, raises queue.Full if the queue is full 
+        scan_queue.put_nowait(scan)  # Non-blocking put, raises queue.Full if the queue is full
 ```
 
 However, for offline recording, it is usually desirable to keep all scans, even if the processing thread cannot keep up in real-time. In this case, an unbounded queue or a large enough bounded queue can be used to store all scans for later processing and analysis.

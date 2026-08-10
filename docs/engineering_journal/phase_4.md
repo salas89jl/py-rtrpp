@@ -8,6 +8,8 @@ To perform RANSAC plane fitting, we can use the following code:
 
 ```python
 import open3d as o3d
+
+
 def extract_ground_plane(points, distance_threshold=0.3, ransac_n=3, num_iterations=1000):
     """
     Extracts the ground plane from a point cloud using RANSAC plane fitting.
@@ -17,7 +19,7 @@ def extract_ground_plane(points, distance_threshold=0.3, ransac_n=3, num_iterati
         distance_threshold (float): The maximum distance a point can be from the plane to be considered an inlier.
         ransac_n (int): The number of points to sample for each RANSAC iteration.
         num_iterations (int): The number of RANSAC iterations to perform.
-    
+
     Returns:
         ground_plane_points (open3d.geometry.PointCloud): The points belonging to the ground plane.
         non_ground_points (open3d.geometry.PointCloud): The points not belonging to the ground plane.
@@ -25,16 +27,16 @@ def extract_ground_plane(points, distance_threshold=0.3, ransac_n=3, num_iterati
     # Create an Open3D point cloud object
     pcd = o3d.geometry.PointCloud()
     pcd.points = o3d.utility.Vector3dVector(points)
-    
+
     # Perform RANSAC plane fitting
-    plane_model, inliers = pcd.segment_plane(distance_threshold=distance_threshold,
-                                             ransac_n=ransac_n,
-                                             num_iterations=num_iterations)
-    
+    plane_model, inliers = pcd.segment_plane(
+        distance_threshold=distance_threshold, ransac_n=ransac_n, num_iterations=num_iterations
+    )
+
     # Extract the ground plane points and the remaining points
     ground_plane_points = pcd.select_by_index(inliers)
     non_ground_points = pcd.select_by_index(inliers, invert=True)
-    
+
     return ground_plane_points, non_ground_points
 ```
 
@@ -51,10 +53,9 @@ def visualize_ground_plane(ground_plane_points, non_ground_points):
 
     # Visualize the ground plane and non-ground points
     o3d.visualization.draw_geometries(
-        [ground_plane_points, non_ground_points], 
+        [ground_plane_points, non_ground_points],
         window_name="Ground Plane Extraction Visualization",
     )
-
 ```
 
 In this code, we set the color of the ground plane points to green and the non-ground points to red. Then, we use Open3D's `draw_geometries` function to visualize both sets of points together in a single window.

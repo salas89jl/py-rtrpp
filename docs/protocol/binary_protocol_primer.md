@@ -43,7 +43,7 @@ print(lsb)  # Output: 1
 ## Sequence Unpacking
 In Python, you can unpack a sequence of bytes into individual variables using tuple unpacking. For example, if you have a bytes objects representing a data packet, you can unpack it as follows:
 ```python
-packet = b'\xA5\x95\x12\xC8\x03'
+packet = b"\xa5\x95\x12\xc8\x03"
 b0, b1, b2, b3, b4 = packet
 ```
 
@@ -60,10 +60,14 @@ To build an integer from multiple bytes, you can use bitwise operations and shif
 ```python
 upper_byte = 0x12
 lower_byte = 0x34
-integer_value = (upper_byte << 8) | lower_byte  # Combines the upper and lower bytes into a single 16-bit integer
+integer_value = (
+    upper_byte << 8
+) | lower_byte  # Combines the upper and lower bytes into a single 16-bit integer
 print(integer_value)  # Output: 4660
 
-integer_value_two = lower_byte | (upper_byte << 8)  # Combines the lower and upper bytes into a single 16-bit integer
+integer_value_two = lower_byte | (
+    upper_byte << 8
+)  # Combines the lower and upper bytes into a single 16-bit integer
 print(integer_value_two)  # Output: 4660
 ```
 
@@ -105,7 +109,7 @@ A5 95 12 C8 03
 In Python, the packet arrives as a bytes object:
 
 ```python
-packet = b'\xA5\x95\x12\xC8\x03'
+packet = b"\xa5\x95\x12\xc8\x03"
 ```
 
 ### Unpacking the Packet
@@ -120,7 +124,7 @@ This is equivalent to:
 ```python
 b0 = packet[0]
 b1 = packet[1]
-b2 = packet[2] 
+b2 = packet[2]
 b3 = packet[3]
 b4 = packet[4]
 ```
@@ -209,7 +213,9 @@ This process ensures that the value of `b2` will move to the left by 8 bits, and
 
 Ultimately, the lower angle bits are combined with the shifted upper angle bits using a bitwise OR operation:
 ```python
-(b2 << 8) | b1 >> 1  # Combines the shifted upper angle bits with the lower angle bits and shifts the result right by 1 to get the final angle value in Q6 format
+(
+    (b2 << 8) | b1 >> 1
+)  # Combines the shifted upper angle bits with the lower angle bits and shifts the result right by 1 to get the final angle value in Q6 format
 ```
 This operation will result in a 16-bit value that represents the angle in Q6 format, and in this case the value of angle_q6 will be `0x1295` (or `00010010 01001010` in binary).
 
@@ -221,7 +227,9 @@ angle_degrees = angle_q6 / 64.0  # Converts the angle from Q6 format to degrees
 __Byte 3 and Byte 4: Lower and Upper Distance Bits__:
 The fourth and fifth bytes contain the lower and upper distance bits, respectively. To extract the distance, we can combine the two bytes into a single 16-bit value and then convert it to millimeters by dividing by `4.0`:
 ```python
-distance_q2 = (b4 << 8) | b3  # Combines the upper and lower distance bits into a single 16-bit value
+distance_q2 = (
+    b4 << 8
+) | b3  # Combines the upper and lower distance bits into a single 16-bit value
 distance_mm = distance_q2 / 4.0  # Converts the distance from Q2 format to millimeters
 ```
 

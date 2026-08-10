@@ -13,7 +13,13 @@ The following exceptions are defined for handling errors related to the RPLIDAR 
 ## Usage Example
 
 ```python
-from rtrpp.sensors.rplidar.exceptions import RPLidarError, RPLidarConnectionError, RPLidarProtocolError, RPLidarTimeoutError, RPLidarDeviceError
+from rtrpp.sensors.rplidar.exceptions import (
+    RPLidarError,
+    RPLidarConnectionError,
+    RPLidarProtocolError,
+    RPLidarTimeoutError,
+    RPLidarDeviceError,
+)
 
 try:
     # Code that interacts with the RPLIDAR device

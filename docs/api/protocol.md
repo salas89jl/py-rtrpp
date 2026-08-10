@@ -359,10 +359,10 @@ from rtrpp.sensors.rplidar.protocol import RPLidarCommand, build_request, parse_
 request_packet = build_request(RPLidarCommand.SCAN)
 
 # Parse a response descriptor packet
-response_descriptor_packet = b'\xA5\x5A\x05\x00\x00\x40\x81'  # Example packet
+response_descriptor_packet = b"\xa5\x5a\x05\x00\x00\x40\x81"  # Example packet
 response_descriptor = parse_response_descriptor(response_descriptor_packet)
 # Parse a scan data packet
-scan_data_packet = b'\x00\x00\x00\x00\x00'  # Example packet
+scan_data_packet = b"\x00\x00\x00\x00\x00"  # Example packet
 scan_data = parse_scan_data(scan_data_packet)
 ```
 ## Future Extensions

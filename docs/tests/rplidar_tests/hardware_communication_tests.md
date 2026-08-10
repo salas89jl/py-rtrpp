@@ -54,32 +54,31 @@ __Implementation__:
    __Script__:
    ```python
    def main() -> None:
-    port = "/dev/tty.usbserial-XXX"
-    transport = RPLidarTransport(
-        port=port,
-        baudrate=1_000_000,
-    )
+       port = "/dev/tty.usbserial-XXX"
+       transport = RPLidarTransport(
+           port=port,
+           baudrate=1_000_000,
+       )
 
-    try:
-        transport.open()
-        driver = RPLidarDriver(transport)
+       try:
+           transport.open()
+           driver = RPLidarDriver(transport)
 
-        info = driver.get_info()
+           info = driver.get_info()
 
-        print(info)
+           print(info)
 
-    except RPLidarError as exc:
-        print(f"RPLIDAR integration test failed: {exc}")
-        raise
+       except RPLidarError as exc:
+           print(f"RPLIDAR integration test failed: {exc}")
+           raise
 
-    finally:
-        transport.close()
-        if not transport.is_open:
-            print("Serial connection is successfully closed. ")
+       finally:
+           transport.close()
+           if not transport.is_open:
+               print("Serial connection is successfully closed. ")
 
-
-    if __name__ == "__main__":
-        main()
+       if __name__ == "__main__":
+           main()
     ```
     __Results__:   
    The `get_info()` method returned:
@@ -92,32 +91,31 @@ __Implementation__:
    __Script__:
    ```python
    def main() -> None:
-    port = "/dev/tty.usbserial-XXX"
-    transport = RPLidarTransport(
-        port=port,
-        baudrate=1_000_000,
-    )
+       port = "/dev/tty.usbserial-XXX"
+       transport = RPLidarTransport(
+           port=port,
+           baudrate=1_000_000,
+       )
 
-    try:
-        transport.open()
-        driver = RPLidarDriver(transport)
+       try:
+           transport.open()
+           driver = RPLidarDriver(transport)
 
-        health = driver.get_health()
+           health = driver.get_health()
 
-        print(health)
+           print(health)
 
-    except RPLidarError as exc:
-        print(f"RPLIDAR integration test failed: {exc}")
-        raise
+       except RPLidarError as exc:
+           print(f"RPLIDAR integration test failed: {exc}")
+           raise
 
-    finally:
-        transport.close()
-        if not transport.is_open:
-            print("Serial connection is successfully closed. ")
+       finally:
+           transport.close()
+           if not transport.is_open:
+               print("Serial connection is successfully closed. ")
 
-
-    if __name__ == "__main__":
-        main()
+       if __name__ == "__main__":
+           main()
     ```
     __Results__:
     The `get_health()` method returned as expected:
@@ -131,32 +129,31 @@ __Implementation__:
 
    ```python
    def main() -> None:
-    port = "/dev/tty.usbserial-XXX"
-    transport = RPLidarTransport(
-        port=port,
-        baudrate=1_000_000,
-    )
+       port = "/dev/tty.usbserial-XXX"
+       transport = RPLidarTransport(
+           port=port,
+           baudrate=1_000_000,
+       )
 
-    try:
-        transport.open()
-        driver = RPLidarDriver(transport)
+       try:
+           transport.open()
+           driver = RPLidarDriver(transport)
 
-        sample_rate = driver.get_samplerate()
+           sample_rate = driver.get_samplerate()
 
-        print(sample_rate)
+           print(sample_rate)
 
-    except RPLidarError as exc:
-        print(f"RPLIDAR integration test failed: {exc}")
-        raise
+       except RPLidarError as exc:
+           print(f"RPLIDAR integration test failed: {exc}")
+           raise
 
-    finally:
-        transport.close()
-        if not transport.is_open:
-            print("Serial connection is successfully closed. ")
+       finally:
+           transport.close()
+           if not transport.is_open:
+               print("Serial connection is successfully closed. ")
 
-
-    if __name__ == "__main__":
-        main()
+       if __name__ == "__main__":
+           main()
     ```
     __Results__:
     The `get_samplerate()` method returned as expected:
@@ -204,7 +201,7 @@ __Implementation__:
         transport = RPLidarTransport(
             port=port,
             baudrate=1_000_000,
-        )   
+        )
         try:
             transport.open()
             driver = RPLidarDriver(transport)
@@ -255,6 +252,7 @@ __Implementation__:
     ```python
     import pytest
 
+
     def main() -> None:
         port = "/dev/tty.usbserial-XXX"
         transport = RPLidarTransport(
@@ -263,8 +261,8 @@ __Implementation__:
         )
         try:
             transport.open()
-            driver = RPLidarDriver(transport)   
-            
+            driver = RPLidarDriver(transport)
+
             exit_code = pytest.main()
             print(f"Unit tests completed with exit code: {exit_code}")
         finally:
@@ -325,7 +323,7 @@ __Corrective Action__: Implemented a post-command delay of 1 millisecond between
 POST_COMMAND_DELAYS = {
     RPLidarCommand.STOP: 0.001,  # 1 millisecond
     RPLidarCommand.RESET: 0.002,  # 2 milliseconds
-}   
+}
 ```
 
 This ensures that the RPLIDAR device has sufficient time to process the change of state command before executing subsequent commands. After implementing these time delays, the driver layer was able to successfully execute all commands sequentially without any errors. 
@@ -337,7 +335,7 @@ __script__: The following script was used to verify the sequential execution of 
 def main() -> None:
     port = "/dev/tty.usbserial-XXX"
     transport = RPLidarTransport(
-        port=port,      
+        port=port,
         baudrate=1_000_000,
     )
     try:
@@ -348,8 +346,8 @@ def main() -> None:
         driver.stop()
         info = driver.get_info()
         health = driver.get_health()
-        sample_rate = driver.get_samplerate()   
-        
+        sample_rate = driver.get_samplerate()
+
         print(info)
         print(health)
         print(sample_rate)
