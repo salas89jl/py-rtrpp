@@ -308,15 +308,23 @@ Transport effects:
 Raises:
 - `RPLidarStateError`
 - `RPLidarConnectionError`
+- `RPLidarTimeoutError`
   
 Internal handling:
 - Catches TransportConnectionError
+- Catches TransportTimeoutError
+- Catches ValueError
+- Synchronizes transport buffers after STOP command is sent
 
 Recovery:
 - `RPLidarStateError`
   - [ ] No command is sent
   - [ ] Transport's internal software buffer remains unchanged
   - [ ] Existing driver state remains unchanged
+
+- `RPLidarTimeoutError`
+  - [ ] Query Transaction Recovery is performed
+  - [ ] Driver satisfies `SCANNING` state invariants if recovery succeeds.
 
 - `RPLidarConnectionError`
   - [ ] Connection-error recovery is performed
@@ -424,46 +432,23 @@ Valid starting states:
 - [ ] Driver may satisfy `IDLE` or `PROTECTION_STOP` state invariants
 
 Successful resulting state:
-- [ ] Device returns a valid health response
-
-- Starting state is `IDLE`:
-  - Health status is `GOOD`:
-    - [ ] Driver remains in `IDLE`
-    - [ ] Driver satisfies `IDLE` state invariants
-
-  - Health status is `WARNING`:
-    - [ ] A health warning is emitted
-    - [ ] Driver remains in `IDLE`
-    - [ ] Driver satisfies `IDLE` state invariants
-
-- Starting state is `PROTECTION_STOP`:
-  - Health status is `GOOD`:
-    - [ ] Driver remains in `PROTECTION_STOP`
-    - [ ] Driver satisfies `PROTECTION_STOP` state invariants
-    - [ ] No automatic transition to `IDLE` occurs
-
-  - Health status is `WARNING`:
-    - [ ] A health warning is emitted
-    - [ ] Driver remains in `PROTECTION_STOP`
-    - [ ] Driver satisfies `PROTECTION_STOP` state invariants
-    - [ ] No automatic transition to `IDLE` occurs
-
-Device health error:
-- Health status is `ERROR`:
-  - [ ] Driver transitions to or remains in `PROTECTION_STOP`
-  - [ ] Driver satisfies `PROTECTION_STOP` state invariants
-  - [ ] `RPLidarDeviceError` is raised
-  - [ ] RESET is not attempted automatically
+- [ ] Driver continues to satisfy its starting state invariants
 
 Raises:
 - `RPLidarStateError`
 - `RPLidarProtocolError`
 - `RPLidarTimeoutError`
 - `RPLidarConnectionError`
-- `RPLidarDeviceError`
 
+Internal handling:
+- Catches ValueError
+- Catches TransportTimeoutError
+- Catches TransportConnectionError
+- Parses and validates the GET_HEALTH response
+- Updates cached health data
+- Returns the device health information
+  
 Recovery:
-
 - `RPLidarStateError`
   - [ ] No command is sent
   - [ ] Existing driver state remains unchanged
@@ -480,9 +465,8 @@ Recovery:
   - [ ] Connection-error recovery is performed
   - [ ] Driver satisfies `NOT_CONNECTED` state invariants
 
-- `RPLidarDeviceError`
-  - [ ] Health status is `ERROR`
-  - [ ] Driver satisfies `PROTECTION_STOP` state invariants
+Important:
+- `get_health()` only queries the device for its health status. It validates the state of the driver and the device's response, and updates the cached health data and returns the device health information. The private method `_check_health()` is responsible for enforcing the device health error policy and transitioning the driver to `PROTECTION_STOP` when the device reports a health status of `ERROR`.
 
 ### __get_samplerate()__:
 Valid starting states:
@@ -518,6 +502,59 @@ Recovery:
 - `RPLidarConnectionError`
 - [ ] Connection-error recovery is performed
 - [ ] Driver satisfies `NOT_CONNECTED` state invariants
+
+
+## Internal Driver Operation Contracts
+
+### __check_health()__:
+Valid starting states:
+- [ ] Driver may satisfy `IDLE` or `PROTECTION_STOP` state invariants
+
+Successful resulting state:
+
+- Starting state is `IDLE`:
+  - Health status is `GOOD`:
+    - [ ] Updates cached health data
+    - [ ] Driver remains in `IDLE`
+    - [ ] Driver satisfies `IDLE` state invariants
+
+  - Health status is `WARNING`:
+    - [ ] Updates cached health data
+    - [ ] A health warning is emitted
+    - [ ] Driver remains in `IDLE`
+    - [ ] Driver satisfies `IDLE` state invariants
+  
+  - Health status is `ERROR`:
+    - [ ] Updates cached health data
+    - [ ] Driver transitions to `PROTECTION_STOP`
+    - [ ] Driver satisfies `PROTECTION_STOP` state invariants
+    - [ ] `RPLidarDeviceError` is raised
+    - [ ] RESET is not attempted automatically
+
+- Starting state is `PROTECTION_STOP`:
+  - Health status is `GOOD`:
+    - [ ] Updates cached health data
+    - [ ] Driver remains in `PROTECTION_STOP`
+    - [ ] Driver satisfies `PROTECTION_STOP` state invariants
+    - [ ] No automatic transition to `IDLE` occurs
+
+  - Health status is `WARNING`:
+    - [ ] Updates cached health data
+    - [ ] A health warning is emitted
+    - [ ] Driver remains in `PROTECTION_STOP`
+    - [ ] Driver satisfies `PROTECTION_STOP` state invariants
+    - [ ] No automatic transition to `IDLE` occurs
+
+  - Health status is `ERROR`:
+    - [ ] Updates cached health data
+    - [ ] Driver remains in `PROTECTION_STOP`
+    - [ ] Driver satisfies `PROTECTION_STOP` state invariants
+    - [ ] `RPLidarDeviceError` is raised
+    - [ ] RESET is not attempted automatically
+
+Important:
+- `_check_health()` does not automatically transition the driver to `IDLE` when health is `GOOD` or `WARNING`. The caller must explicitly invoke `reset()` to attempt device recovery.
+
 
 ## __Recovery Policy__:
 
