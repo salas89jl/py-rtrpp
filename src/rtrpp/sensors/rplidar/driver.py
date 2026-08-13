@@ -209,9 +209,7 @@ class RPLidarDriver:
         try:
             self._send_request(prot.RPLidarCommand.RESET)
             time.sleep(prot.POST_COMMAND_DELAYS[prot.RPLidarCommand.RESET])
-
-            self._check_health()
-
+            
             try:
                 self._synchronize_transport_buffers()
             except TransportConnectionError as exc:
@@ -230,6 +228,8 @@ class RPLidarDriver:
         except RPLidarConnectionError:
             self._recover_from_connection_error()
             raise
+
+        self._check_health()
 
         if self._health.status is not prot.RPLidarHealthStatus.ERROR:
             # Transition to IDLE state invariant if the device is not in an error state.
