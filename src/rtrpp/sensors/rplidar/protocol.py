@@ -273,7 +273,7 @@ def parse_get_health_response(packet: bytes) -> RPLidarGetHealthData:
     status = packet[0]
 
     if not any(item.value == status for item in RPLidarHealthStatus):
-        raise ValueError(f"Invalid GET_HEALTH status: {status}")
+        raise ValueError(f"Invalid GET_HEALTH status value: {status}")
 
     error_code = int.from_bytes(packet[1:3], byteorder="little")
 
