@@ -77,7 +77,11 @@ def assert_transport_closed_in_connection_error(
 ):
     assert transport.is_open is False
     assert transport.close_count == 1
+    assert transport.internal_buffer == b""
+
+def assert_transport_did_not_sync_in_connection_error(
+    transport: FakeTransport,
+):
     assert transport.flush_count == 0
     assert transport.reset_input_count == 0
     assert transport.reset_output_count == 0
-    assert transport.internal_buffer == b""

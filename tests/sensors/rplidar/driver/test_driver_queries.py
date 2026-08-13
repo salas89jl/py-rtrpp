@@ -31,6 +31,7 @@ from tests.sensors.rplidar.driver.assertions import (
     assert_transport_untouched,
     assert_scanning_invariants,
     assert_transport_closed_in_connection_error,
+    assert_transport_did_not_sync_in_connection_error,
 )
 
 
@@ -1016,6 +1017,7 @@ def test_in_idle_query_write_connection_failure_transitions_to_not_connected(
 
     assert isinstance(exc_info.value.__cause__, TransportConnectionError)
     assert_transport_closed_in_connection_error(transport)
+    assert_transport_did_not_sync_in_connection_error(transport)
     assert_not_connected_invariants(driver) # state transitions to NOT_CONNECTED
 
 
@@ -1043,6 +1045,7 @@ def test_in_protection_stop_query_connection_failure_shifts_to_not_connected(
 
     assert isinstance(exc_info.value.__cause__, TransportConnectionError)
     assert_transport_closed_in_connection_error(transport)
+    assert_transport_did_not_sync_in_connection_error(transport)
     assert_not_connected_invariants(driver) # state transitions to NOT_CONNECTED
 
 
@@ -1059,6 +1062,7 @@ def test_in_scanning_query_connection_failure_shifts_to_not_connected(
 
     assert isinstance(exc_info.value.__cause__, TransportConnectionError)
     assert_transport_closed_in_connection_error(transport)
+    assert_transport_did_not_sync_in_connection_error(transport)
     assert_not_connected_invariants(driver) # state transitions to NOT_CONNECTED
 
 
@@ -1085,6 +1089,7 @@ def test_in_idle_query_read_connection_failure_transitions_to_not_connected(
 
     assert isinstance(exc_info.value.__cause__, TransportConnectionError)
     assert_transport_closed_in_connection_error(transport)
+    assert_transport_did_not_sync_in_connection_error(transport)
     assert_not_connected_invariants(driver) # state transitions to NOT_CONNECTED
 
 
@@ -1113,6 +1118,7 @@ def test_in_protection_stop_query_read_connection_failure_shifts_to_not_connecte
     assert transport.written == bytes([0xA5, command])
     assert isinstance(exc_info.value.__cause__, TransportConnectionError)
     assert_transport_closed_in_connection_error(transport)
+    assert_transport_did_not_sync_in_connection_error(transport)
     assert_not_connected_invariants(driver) # state transitions to NOT_CONNECTED
 
 
@@ -1131,6 +1137,7 @@ def test_in_protection_stop_reset_read_connection_failure_shifts_to_not_connecte
         [0xA5, RPLidarCommand.RESET.value, 0xA5, RPLidarCommand.GET_HEALTH.value]
     )
     assert isinstance(exc_info.value.__cause__, TransportConnectionError)
-    print(transport.close_count)
+    print(transport.flush_count)
     assert_transport_closed_in_connection_error(transport)
+    assert_transport_synced(transport)
     assert_not_connected_invariants(driver) # state transitions to NOT_CONNECTED
