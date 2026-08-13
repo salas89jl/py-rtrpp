@@ -49,7 +49,7 @@ def assert_scanning_invariants(
 ) -> None:
     assert driver._working_state is RPLidarWorkingState.SCANNING
     assert driver._scanning_state.is_active is True
-    assert driver._scanning_state.mode is RPLidarScanningMode.STANDARD_SCAN
+    assert driver._scanning_state.mode is RPLidarScanningMode.STANDARD
     assert driver._scanning_state.response_type is RPLidarResponseType.MEASUREMENT_DATA
     assert driver._scanning_state.packet_size == 5
     assert driver._scanning_state.completed_scan_count >= 0
@@ -64,3 +64,20 @@ def assert_transport_untouched(
     assert transport.open_count == 0
     assert transport.close_count == 0
     assert transport.written == b""
+
+def assert_transport_synced(
+    transport: FakeTransport,
+):
+    assert transport.flush_count == 1
+    assert transport.reset_input_count == 1
+    assert transport.reset_output_count == 1
+
+def assert_transport_closed_in_connection_error(
+    transport: FakeTransport,
+):
+    assert transport.is_open is False
+    assert transport.close_count == 1
+    assert transport.flush_count == 0
+    assert transport.reset_input_count == 0
+    assert transport.reset_output_count == 0
+    assert transport.internal_buffer == b""
