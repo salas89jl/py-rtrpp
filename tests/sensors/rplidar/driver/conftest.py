@@ -38,6 +38,7 @@ def scanning_driver():
         mode=RPLidarScanningMode.STANDARD,
         response_type=RPLidarResponseType.MEASUREMENT_DATA,
         completed_scan_count=0,
+        
     )
 
     return driver, transport
