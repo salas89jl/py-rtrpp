@@ -202,11 +202,10 @@ def parse_response_descriptor(packet: bytes) -> RPLidarResponseDescriptor:
     raw_length_mode = b2 | (b3 << 8) | (b4 << 16) | (b5 << 24)
 
     data_length = raw_length_mode & 0x3FFFFFFF  # Mask to get the lower 30 bits for data length
-    
+
     send_mode = (raw_length_mode >> 30) & 0x03  # Mask to get the upper 2 bits for send mode
 
     data_type = b6
-
 
     return RPLidarResponseDescriptor(
         data_length=data_length, send_mode=send_mode, data_type=data_type
