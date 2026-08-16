@@ -280,7 +280,9 @@ def test_get_health_valid_request_and_returns_warning_health_in_idle(idle_driver
     assert_idle_invariants(driver)
 
 
-def test_get_health_valid_request_and_returns_warning_health_in_protection_stop(protection_stop_driver):
+def test_get_health_valid_request_and_returns_warning_health_in_protection_stop(
+    protection_stop_driver,
+):
     driver, transport = protection_stop_driver
 
     queue_get_health_response(
@@ -565,225 +567,7 @@ def test_reset_waits_before_transitioning_to_idle(mock_sleep, protection_stop_dr
     mock_sleep.assert_called_once_with(0.002)
     assert_idle_invariants(driver)
 
-# ---------------------------------------Test _check_health()-----------------------------------#
 
-## _check_health - successful outcomes
-
-### Starting state is `IDLE`:
-def test_check_health_warns_on_good_health_in_idle_state(idle_driver):
-    driver, transport = idle_driver
-
-    queue_get_health_response(
-        transport,
-        status=0,
-        error_code=0x0000,
-    )
-
-    driver._check_health()
-
-    assert transport.written == bytes([0xA5, RPLidarCommand.GET_HEALTH.value])
-    assert driver._health.status == 0
-    assert driver._health.error_code == 0x0000
-    assert_idle_invariants(driver)  
-
-
-def test_check_health_warns_on_warning_health_in_idle_state(idle_driver):
-    driver, transport = idle_driver
-
-    queue_get_health_response(
-        transport,
-        status=1,
-        error_code=0x1234,
-    )
-
-    with pytest.warns(RPLidarHealthWarning, match="potential risk"):
-        driver._check_health()
-
-    assert transport.written == bytes([0xA5, RPLidarCommand.GET_HEALTH.value])
-    assert driver._health.status == 1
-    assert driver._health.error_code == 0x1234
-    assert_idle_invariants(driver)
-
-
-def test_check_health_raises_error_on_error_health_in_idle_state_and_transitions_to_protection_stop(
-        idle_driver
-):
-    driver, transport = idle_driver
-
-    queue_get_health_response(
-        transport,
-        status=2,
-        error_code=0x5678,
-    )
-
-    with pytest.raises(RPLidarDeviceError, match="RPLIDAR reported an internal error"):
-        driver._check_health()
-
-    assert transport.written == bytes([0xA5, RPLidarCommand.GET_HEALTH.value])
-    assert driver._health.status == 2
-    assert driver._health.error_code == 0x5678
-    assert_protection_stop_invariants(driver)
-
-
-### Starting state is `PROTECTION_STOP`:
-def test_check_health_caches_good_health_in_protection_stop_state(protection_stop_driver):
-    driver, transport = protection_stop_driver
-
-    queue_get_health_response(
-        transport,
-        status=0,
-        error_code=0x0000,
-    )
-
-    driver._check_health()
-
-    assert transport.written == bytes([0xA5, RPLidarCommand.GET_HEALTH.value])
-    assert driver._health.status == 0
-    assert driver._health.error_code == 0x0000
-
-    # Starting state remains unchanged - recovery must be explicitly invoked by the caller
-    assert_protection_stop_invariants(driver) 
-
-
-
-
-def test_check_health_warns_on_warning_health_in_protection_stop_state(protection_stop_driver):
-    driver, transport = protection_stop_driver
-
-    queue_get_health_response(
-        transport,
-        status=1,
-        error_code=0x5678,
-    )
-
-    with pytest.warns(RPLidarHealthWarning, match="potential risk"):
-        driver._check_health()
-
-    assert transport.written == bytes([0xA5, RPLidarCommand.GET_HEALTH.value])
-    assert driver._health.status == 1
-    assert driver._health.error_code == 0x5678
-
-    # Starting state remains unchanged - recovery must be explicitly invoked by the caller
-    assert_protection_stop_invariants(driver)
-
-
-def test_check_health_raises_error_on_error_health_in_protection_stop_state(protection_stop_driver):
-    driver, transport = protection_stop_driver
-
-    queue_get_health_response(
-        transport,
-        status=2,
-        error_code=0x5678,
-    )
-
-    with pytest.raises(RPLidarDeviceError, match="RPLIDAR reported an internal error"):
-        driver._check_health()
-
-    assert transport.written == bytes([0xA5, RPLidarCommand.GET_HEALTH.value])
-    assert driver._health.status == 2
-    assert driver._health.error_code == 0x5678
-    assert_protection_stop_invariants(driver) # Starting state remains unchanged
-
-
-## _check_health - query protocol failures
-def test_check_health_reads_invalid_start_flags(idle_driver):
-    driver, transport = idle_driver
-
-    descriptor = b"\x00\x00\x03\x00\x00\x00\x06"  # Expects 0xA5, 0x5A
-    payload = bytes([0x01, 0x05, 0x02, 0x10, *range(16)])
-    transport.responses.extend([descriptor, payload])
-
-    with pytest.raises(
-        RPLidarProtocolError, match="Invalid response descriptor start flags"
-    ) as exc_info:
-        driver._check_health()
-
-    assert isinstance(exc_info.value.__cause__, ValueError)
-    assert_idle_invariants(driver)  # starting state remains unchanged
-
-def test_check_health_receives_invalid_descriptor_response_length(idle_driver):
-    driver, transport = idle_driver
-
-    descriptor = b"\xa5\x5a\x15\x00\x00\x00\x06"  # Expects 0x03 (3), received 0x15 (21)
-    payload = bytes([0x01, 0x05, 0x02, 0x10, *range(16)])
-
-    transport.responses.extend([descriptor, payload])
-
-    with pytest.raises(
-        RPLidarProtocolError,
-        match="GET_HEALTH expected 3 response bytes, received descriptor length 21.",
-    ) as exc_info:
-        driver._check_health()
-
-    assert isinstance(exc_info.value.__cause__, ValueError)
-    assert_idle_invariants(driver)  # starting state remains unchanged
-
-def test_check_health_receives_invalid_descriptor_send_mode(idle_driver):
-    driver, transport = idle_driver
-
-    descriptor = b"\xa5\x5a\x03\x00\x00\x40\x06"  # Expects (0), receives (1)
-    payload = bytes([0x01, 0x05, 0x02, 0x10, *range(16)])
-
-    transport.responses.extend([descriptor, payload])
-
-    with pytest.raises(
-        RPLidarProtocolError, match="GET_HEALTH expected send mode 0, but got 1"
-    ) as exc_info:
-        driver._check_health()
-
-    assert isinstance(exc_info.value.__cause__, ValueError)
-    assert_idle_invariants(driver)  # starting state remains unchanged
-
-
-def test_check_health_receives_invalid_descriptor_data_type(idle_driver):
-    driver, transport = idle_driver
-
-    descriptor = b"\xa5\x5a\x03\x00\x00\x00\x07"  # Expects 0x06 (6), received 0x07 (7)
-    payload = bytes([0x01, 0x05, 0x02, 0x10, *range(16)])
-
-    transport.responses.extend([descriptor, payload])
-
-    with pytest.raises(
-        RPLidarProtocolError, match="GET_HEALTH expected data type 6, but got 7"
-    ) as exc_info:
-        driver._check_health()
-
-    assert isinstance(exc_info.value.__cause__, ValueError)
-    assert_idle_invariants(driver)  # starting state remains unchanged
-
-def test_check_health_receives_invalid_status_value(idle_driver):
-    driver, transport = idle_driver
-
-    queue_get_health_response(
-        transport,
-        status=5,  # Invalid status value
-        error_code=0x1234,
-    )
-
-    with pytest.raises(
-        RPLidarProtocolError, match="Invalid GET_HEALTH status value: 5"
-    ) as exc_info:
-        driver._check_health()
-
-    assert isinstance(exc_info.value.__cause__, ValueError)
-    assert_idle_invariants(driver)  # starting state remains unchanged
-
-def test_check_health_receives_invalid_status_value_in_protection_stop(protection_stop_driver):
-    driver, transport = protection_stop_driver
-
-    queue_get_health_response(
-        transport,
-        status=5,  # Invalid status value
-        error_code=0x1234,
-    )
-
-    with pytest.raises(
-        RPLidarProtocolError, match="Invalid GET_HEALTH status value: 5"
-    ) as exc_info:
-        driver._check_health()
-
-    assert isinstance(exc_info.value.__cause__, ValueError)
-    assert_protection_stop_invariants(driver)  # starting state remains unchanged
 
 # ---------------------------------------State failures-----------------------------------------#
 
@@ -797,7 +581,6 @@ def test_check_health_receives_invalid_status_value_in_protection_stop(protectio
         lambda driver: driver.get_samplerate(),
         lambda driver: driver.stop(),
         lambda driver: driver.reset(),
-        lambda driver: driver._check_health(),
     ],
 )
 def test_query_methods_raise_invalid_state_error_when_not_connected(
@@ -821,7 +604,6 @@ def test_query_methods_raise_invalid_state_error_when_not_connected(
         lambda driver: driver.get_health(),
         lambda driver: driver.get_samplerate(),
         lambda driver: driver.reset(),
-        lambda driver: driver._check_health(),
     ],
 )
 def test_query_methods_raise_invalid_state_error_when_scanning(
@@ -851,6 +633,7 @@ def test_stop_and_reset_raise_invalid_state_error_in_idle(operation, idle_driver
     assert_transport_untouched(transport)
     assert_idle_invariants(driver)  # starting state remains unchanged
 
+
 # Query methods - invalid starting state(PROTECTION_STOP)
 def test_stop_and_raise_invalid_state_error_in_protection_stop(protection_stop_driver):
     driver, transport = protection_stop_driver
@@ -860,6 +643,7 @@ def test_stop_and_raise_invalid_state_error_in_protection_stop(protection_stop_d
 
     assert_transport_untouched(transport)
     assert_protection_stop_invariants(driver)  # starting state remains unchanged
+
 
 # ---------------------------------------Timeout failures----------------------------------------#
 
@@ -871,7 +655,6 @@ def test_stop_and_raise_invalid_state_error_in_protection_stop(protection_stop_d
         (lambda driver: driver.get_info(), RPLidarCommand.GET_INFO.value),
         (lambda driver: driver.get_health(), RPLidarCommand.GET_HEALTH.value),
         (lambda driver: driver.get_samplerate(), RPLidarCommand.GET_SAMPLERATE.value),
-        (lambda driver: driver._check_health(), RPLidarCommand.GET_HEALTH.value),
     ],
 )
 def test_query_methods_read_timeout_restores_idle(operation, command, idle_driver):
@@ -895,7 +678,6 @@ def test_query_methods_read_timeout_restores_idle(operation, command, idle_drive
         (lambda driver: driver.get_info(), RPLidarCommand.GET_INFO.value),
         (lambda driver: driver.get_health(), RPLidarCommand.GET_HEALTH.value),
         (lambda driver: driver.get_samplerate(), RPLidarCommand.GET_SAMPLERATE.value),
-        (lambda driver: driver._check_health(), RPLidarCommand.GET_HEALTH.value),
     ],
 )
 def test_query_methods_read_timeout_restores_protection_stop(
@@ -936,7 +718,6 @@ def test_reset_read_timeout_restores_protection_stop(protection_stop_driver):
         lambda driver: driver.get_info(),
         lambda driver: driver.get_health(),
         lambda driver: driver.get_samplerate(),
-        lambda driver: driver._check_health(),
     ],
 )
 def test_query_methods_write_timeout_restores_idle_(operation, idle_driver):
@@ -960,7 +741,6 @@ def test_query_methods_write_timeout_restores_idle_(operation, idle_driver):
         lambda driver: driver.get_health(),
         lambda driver: driver.get_samplerate(),
         lambda driver: driver.reset(),
-        lambda driver: driver._check_health(),
     ],
 )
 def test_query_methods_write_timeout_restores_protection_stop(operation, protection_stop_driver):
@@ -986,9 +766,8 @@ def test_stop_write_timeout_restore_scanning_state(scanning_driver):
         driver.stop()
 
     assert isinstance(exc_info.value.__cause__, TransportTimeoutError)
-    assert_scanning_invariants(driver) # starting state remains unchanged
+    assert_scanning_invariants(driver)  # starting state remains unchanged
     assert_transport_synced(transport)
-
 
 
 # --------------------------------------Connection failures---------------------------------------#
@@ -1001,7 +780,6 @@ def test_stop_write_timeout_restore_scanning_state(scanning_driver):
         lambda driver: driver.get_info(),
         lambda driver: driver.get_health(),
         lambda driver: driver.get_samplerate(),
-        lambda driver: driver._check_health(),
     ],
 )
 def test_in_idle_query_write_connection_failure_transitions_to_not_connected(
@@ -1018,7 +796,7 @@ def test_in_idle_query_write_connection_failure_transitions_to_not_connected(
     assert isinstance(exc_info.value.__cause__, TransportConnectionError)
     assert_transport_closed_in_connection_error(transport)
     assert_transport_did_not_sync_in_connection_error(transport)
-    assert_not_connected_invariants(driver) # state transitions to NOT_CONNECTED
+    assert_not_connected_invariants(driver)  # state transitions to NOT_CONNECTED
 
 
 ## Query in protection stop driver - TransportConnectionError while sending request
@@ -1029,7 +807,6 @@ def test_in_idle_query_write_connection_failure_transitions_to_not_connected(
         lambda driver: driver.get_health(),
         lambda driver: driver.get_samplerate(),
         lambda driver: driver.reset(),
-        lambda driver: driver._check_health(),
     ],
 )
 def test_in_protection_stop_query_connection_failure_shifts_to_not_connected(
@@ -1046,7 +823,7 @@ def test_in_protection_stop_query_connection_failure_shifts_to_not_connected(
     assert isinstance(exc_info.value.__cause__, TransportConnectionError)
     assert_transport_closed_in_connection_error(transport)
     assert_transport_did_not_sync_in_connection_error(transport)
-    assert_not_connected_invariants(driver) # state transitions to NOT_CONNECTED
+    assert_not_connected_invariants(driver)  # state transitions to NOT_CONNECTED
 
 
 ## Query in scanning driver - TransportConnectionError while sending request
@@ -1063,7 +840,7 @@ def test_in_scanning_query_connection_failure_shifts_to_not_connected(
     assert isinstance(exc_info.value.__cause__, TransportConnectionError)
     assert_transport_closed_in_connection_error(transport)
     assert_transport_did_not_sync_in_connection_error(transport)
-    assert_not_connected_invariants(driver) # state transitions to NOT_CONNECTED
+    assert_not_connected_invariants(driver)  # state transitions to NOT_CONNECTED
 
 
 ## Query in idle driver - TransportConnectionError while reading response
@@ -1073,7 +850,6 @@ def test_in_scanning_query_connection_failure_shifts_to_not_connected(
         lambda driver: driver.get_info(),
         lambda driver: driver.get_health(),
         lambda driver: driver.get_samplerate(),
-        lambda driver: driver._check_health(),
     ],
 )
 def test_in_idle_query_read_connection_failure_transitions_to_not_connected(
@@ -1090,7 +866,7 @@ def test_in_idle_query_read_connection_failure_transitions_to_not_connected(
     assert isinstance(exc_info.value.__cause__, TransportConnectionError)
     assert_transport_closed_in_connection_error(transport)
     assert_transport_did_not_sync_in_connection_error(transport)
-    assert_not_connected_invariants(driver) # state transitions to NOT_CONNECTED
+    assert_not_connected_invariants(driver)  # state transitions to NOT_CONNECTED
 
 
 ## Query in protection stop driver - TransportConnectionError while reading response
@@ -1100,7 +876,6 @@ def test_in_idle_query_read_connection_failure_transitions_to_not_connected(
         (lambda driver: driver.get_info(), RPLidarCommand.GET_INFO.value),
         (lambda driver: driver.get_health(), RPLidarCommand.GET_HEALTH.value),
         (lambda driver: driver.get_samplerate(), RPLidarCommand.GET_SAMPLERATE.value),
-        (lambda driver: driver._check_health(), RPLidarCommand.GET_HEALTH.value),
     ],
 )
 def test_in_protection_stop_query_read_connection_failure_shifts_to_not_connected(
@@ -1119,7 +894,7 @@ def test_in_protection_stop_query_read_connection_failure_shifts_to_not_connecte
     assert isinstance(exc_info.value.__cause__, TransportConnectionError)
     assert_transport_closed_in_connection_error(transport)
     assert_transport_did_not_sync_in_connection_error(transport)
-    assert_not_connected_invariants(driver) # state transitions to NOT_CONNECTED
+    assert_not_connected_invariants(driver)  # state transitions to NOT_CONNECTED
 
 
 ### driver.reset() - TransportConnectionError while reading response
@@ -1140,4 +915,4 @@ def test_in_protection_stop_reset_read_connection_failure_shifts_to_not_connecte
     print(transport.flush_count)
     assert_transport_closed_in_connection_error(transport)
     assert_transport_synced(transport)
-    assert_not_connected_invariants(driver) # state transitions to NOT_CONNECTED
+    assert_not_connected_invariants(driver)  # state transitions to NOT_CONNECTED

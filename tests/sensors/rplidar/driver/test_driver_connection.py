@@ -202,12 +202,12 @@ def test_connect_health_failure_restores_not_connected(
     driver, transport = not_connected_driver
 
     transport.fail_write = TransportTimeoutError("Timeout requesting health")
-    transport.fail_flush = TransportConnectionError("Failed flush")
+    transport.fail_close = TransportConnectionError("Failed closed")
 
     with pytest.raises(RPLidarConnectionError) as exc_info:
         driver.connect()
 
-    assert "Failed flush" in str(exc_info.value)
+    assert "Failed closed" in str(exc_info.value)
     assert_not_connected_invariants(driver)
 
 
