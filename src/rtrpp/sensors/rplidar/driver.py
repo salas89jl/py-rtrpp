@@ -45,7 +45,7 @@ class RPLidarDriver:
 
         self._pending_measurement: prot.RPLidarScanData | None = None
 
-#------------------Public Query Methods-----------------#
+    # ------------------Public Query Methods-----------------#
 
     def get_info(self) -> prot.RPLidarGetInfoData:
         """Sends GET_INFO command to the RPLIDAR device and returns parsed response object."""
@@ -78,13 +78,15 @@ class RPLidarDriver:
                 f"GET_INFO returned an invalid protocol response. {exc}"
             ) from exc
 
-        except RPLidarTimeoutError:
+        except TransportTimeoutError as exc:
             self._recover_from_query_transaction_error()
-            raise
+            raise RPLidarTimeoutError(f"Timed out attempting to get device info: {exc}") from exc
 
-        except RPLidarConnectionError:
+        except TransportConnectionError as exc:
             self._recover_from_connection_error()
-            raise
+            raise RPLidarConnectionError(
+                f"Connection failed attempting to get device info: {exc}"
+            ) from exc
 
     def get_health(self) -> prot.RPLidarGetHealthData:
         """Sends GET_HEALTH command to the RPLIDAR device and returns parsed response object"""
@@ -118,13 +120,15 @@ class RPLidarDriver:
                 f"GET_HEALTH returned an invalid protocol response. {exc}"
             ) from exc
 
-        except RPLidarTimeoutError:
+        except TransportTimeoutError as exc:
             self._recover_from_query_transaction_error()
-            raise
+            raise RPLidarTimeoutError(f"Timed out attempting to get device health: {exc}") from exc
 
-        except RPLidarConnectionError:
+        except TransportConnectionError as exc:
             self._recover_from_connection_error()
-            raise
+            raise RPLidarConnectionError(
+                f"Connection failed attempting to get device health: {exc}"
+            ) from exc
 
         if self._health.status is prot.RPLidarHealthStatus.WARNING.value:
             warnings.warn(
@@ -168,13 +172,17 @@ class RPLidarDriver:
                 f"GET_SAMPLERATE returned an invalid protocol response. {exc}"
             ) from exc
 
-        except RPLidarTimeoutError:
+        except TransportTimeoutError as exc:
             self._recover_from_query_transaction_error()
-            raise
+            raise RPLidarTimeoutError(
+                f"Timed out attempting to get device samplerate: {exc}"
+            ) from exc
 
-        except RPLidarConnectionError:
+        except TransportConnectionError as exc:
             self._recover_from_connection_error()
-            raise
+            raise RPLidarConnectionError(
+                f"Connection failed attempting to get device samplerate: {exc}"
+            ) from exc
 
     def stop(self) -> None:
         """Sends the STOP command to the RPLIDAR device."""
@@ -183,6 +191,12 @@ class RPLidarDriver:
 
         try:
             self._request_stop()
+
+        except ValueError as exc:
+            self._recover_from_query_transaction_error()
+            raise RPLidarProtocolError(
+                f"Communication failed while stopping the RPLIDAR scan: {exc}"
+            ) from exc
 
         except TransportConnectionError as exc:
             self._recover_from_connection_error()
@@ -207,35 +221,55 @@ class RPLidarDriver:
         self._require_state(prot.RPLidarWorkingState.PROTECTION_STOP)
 
         try:
-            self._send_request(prot.RPLidarCommand.RESET)
-            time.sleep(prot.POST_COMMAND_DELAYS[prot.RPLidarCommand.RESET])
-
             try:
+                self._send_request(prot.RPLidarCommand.RESET)
+                time.sleep(prot.POST_COMMAND_DELAYS[prot.RPLidarCommand.RESET])
+
                 self._synchronize_transport_buffers()
+
+            except RPLidarDeviceError:
+                raise
+
+            except ValueError as exc:
+                self._recover_from_query_transaction_error()
+                raise RPLidarProtocolError(
+                    f"Communication failed while resetting the RPLIDAR device: {exc}"
+                ) from exc
+
+            except TransportTimeoutError as exc:
+                self._recover_from_query_transaction_error()
+                raise RPLidarTimeoutError(
+                    f"Communication timed out while resetting the RPLIDAR device: {exc}"
+                ) from exc
+
             except TransportConnectionError as exc:
                 self._recover_from_connection_error()
                 raise RPLidarConnectionError(
-                    f"Communication failed while synchronizing transport buffers after RESET: {exc}"
+                    f"Communication failed while resetting the RPLIDAR device: {exc}"
                 ) from exc
+
+            self._check_health()
 
         except RPLidarDeviceError:
             raise
 
-        except (RPLidarProtocolError, RPLidarTimeoutError):
+        except TransportTimeoutError as exc:
             self._recover_from_query_transaction_error()
-            raise
+            raise RPLidarTimeoutError(
+                f"Communication timed out while checking health after RESET: {exc}"
+            ) from exc
 
-        except RPLidarConnectionError:
+        except TransportConnectionError as exc:
             self._recover_from_connection_error()
-            raise
-
-        self._check_health()
+            raise RPLidarConnectionError(
+                f"Communication failed while checking health after RESET: {exc}"
+            ) from exc
 
         if self._health.status is not prot.RPLidarHealthStatus.ERROR:
             # Transition to IDLE state invariant if the device is not in an error state.
             self._set_idle_state()
 
-#------------------Public Connection Methods-----------------#
+    # ------------------Public Connection Methods-----------------#
 
     def connect(self) -> None:
         """Establishes a connection to the RPLIDAR device."""
@@ -257,7 +291,7 @@ class RPLidarDriver:
             raise RPLidarProtocolError(
                 f"Invalid protocol response during connection initialization: {exc}"
             ) from exc
-        except RPLidarTimeoutError as exc:
+        except TransportTimeoutError as exc:
             self._recover_from_connection_error()
             raise RPLidarTimeoutError(
                 f"Timed out while attempting to connect to the RPLIDAR device: {exc}"
@@ -301,15 +335,16 @@ class RPLidarDriver:
         if stop_error is not None:
             raise stop_error
 
-#------------------Public Scanning Methods-----------------#
+    # ------------------Public Scanning Methods-----------------#
 
     def start_scan(self) -> None:
         """Enter standard SCAN mode and validate its descriptor."""
 
         self._require_state(prot.RPLidarWorkingState.IDLE)
-        
+
         try:
             self._send_request(prot.RPLidarCommand.SCAN)
+
             descriptor = self._read_and_validate_descriptor(
                 command=prot.RPLidarCommand.SCAN,
                 expected_data_length=prot.RPLidarDataLength.SCAN_DATA,
@@ -327,24 +362,19 @@ class RPLidarDriver:
                 response_type=prot.RPLidarResponseType.MEASUREMENT_DATA,
                 completed_scan_count=0,
             )
-
-        except TransportTimeoutError as exc:
-            self._recover_from_stream_error()
-            raise RPLidarTimeoutError(
-                f"Timed out while waiting for the SCAN response descriptor. {exc}"
-            ) from exc
-
-        except TransportConnectionError as exc:
-            self._recover_from_connection_error()
-            raise RPLidarConnectionError(
-                f"Communication failed attempted to enter SCAN mode. {exc}"
-            ) from exc
-
         except ValueError as exc:
             self._recover_from_stream_error()
             raise RPLidarProtocolError(
                 f"SCAN returned an invalid protocol response descriptor. {exc}"
             ) from exc
+
+        except TransportTimeoutError as exc:
+            self._recover_from_stream_error()
+            raise RPLidarTimeoutError(f"Timed out while starting scan: {exc}") from exc
+
+        except TransportConnectionError as exc:
+            self._recover_from_connection_error()
+            raise RPLidarConnectionError(f"Connection failed while starting scan: {exc}") from exc
 
     def iter_measurements(self) -> Iterator[prot.RPLidarScanData]:
         """Yield parsed measurements continuously until scanning stops."""
@@ -355,49 +385,47 @@ class RPLidarDriver:
             yield self._read_measurement()
 
     def read_scan(self) -> list[prot.RPLidarScanData]:
-            """Return one complete revolution, delimited by start flag."""
-            try:
-                # Validate working state before attempting to read a scan.
-                self._require_state(prot.RPLidarWorkingState.SCANNING)
-    
-                # Initialize the list to store one complete revolution of scan data.
-                scan: list[prot.RPLidarScanData] = []
-    
-                # Check if pending measurement from the previous scan exists.
-                if self._pending_measurement is not None:
-                    first = self._pending_measurement
-                    self._pending_measurement = None
-                else:
-                    first = self._wait_for_new_scan()
-    
-                scan.append(first)
-    
-                for measurement in self.iter_measurements():
-                    if measurement.start_flag and scan:
-                        self._pending_measurement = measurement
-                        break
-                    scan.append(measurement)
-                self._scanning_state.completed_scan_count += 1
-    
-                return scan
-    
-            except ValueError as exc:
-                self._recover_from_stream_error()
-                raise RPLidarProtocolError(
-                    f"Invalid protocol response while reading a complete scan. {exc}"
-                ) from exc
-    
-            except TransportTimeoutError as exc:
-                self._recover_from_stream_error()
-                raise RPLidarTimeoutError(
-                    f"Timed out while reading a complete scan. {exc}"
-                ) from exc
-    
-            except TransportConnectionError as exc:
-                self._recover_from_connection_error()
-                raise RPLidarConnectionError(
-                    f"Communication failed while reading a scan. {exc}"
-                ) from exc
+        """Return one complete revolution, delimited by start flag."""
+        try:
+            # Validate working state before attempting to read a scan.
+            self._require_state(prot.RPLidarWorkingState.SCANNING)
+
+            # Initialize the list to store one complete revolution of scan data.
+            scan: list[prot.RPLidarScanData] = []
+
+            # Check if pending measurement from the previous scan exists.
+            if self._pending_measurement is not None:
+                first = self._pending_measurement
+                self._pending_measurement = None
+            else:
+                first = self._wait_for_new_scan()
+
+            scan.append(first)
+
+            for measurement in self.iter_measurements():
+                if measurement.start_flag and scan:
+                    self._pending_measurement = measurement
+                    break
+                scan.append(measurement)
+            self._scanning_state.completed_scan_count += 1
+
+            return scan
+
+        except ValueError as exc:
+            self._recover_from_stream_error()
+            raise RPLidarProtocolError(
+                f"Invalid protocol response while reading a complete scan. {exc}"
+            ) from exc
+
+        except TransportTimeoutError as exc:
+            self._recover_from_stream_error()
+            raise RPLidarTimeoutError(f"Timed out while reading a complete scan. {exc}") from exc
+
+        except TransportConnectionError as exc:
+            self._recover_from_connection_error()
+            raise RPLidarConnectionError(
+                f"Communication failed while reading 6 a scan. {exc}"
+            ) from exc
 
     # -----------------Private Query Methods-----------------#
 
@@ -409,32 +437,19 @@ class RPLidarDriver:
             prot.RPLidarWorkingState.PROTECTION_STOP,
         )
 
-        try:
-            self._send_request(prot.RPLidarCommand.GET_HEALTH)
+        self._send_request(prot.RPLidarCommand.GET_HEALTH)
 
-            # Read and validate the descriptor for GET_HEALTH response.
-            descriptor = self._read_and_validate_descriptor(
-                command=prot.RPLidarCommand.GET_HEALTH,
-                expected_data_length=prot.RPLidarDataLength.GET_HEALTH,
-                expected_send_mode=prot.RPLidarSendMode.SINGLE_RESPONSE,
-                expected_data_type=prot.RPLidarResponseType.DEVICE_HEALTH,
-            )
+        # Read and validate the descriptor for GET_HEALTH response.
+        descriptor = self._read_and_validate_descriptor(
+            command=prot.RPLidarCommand.GET_HEALTH,
+            expected_data_length=prot.RPLidarDataLength.GET_HEALTH,
+            expected_send_mode=prot.RPLidarSendMode.SINGLE_RESPONSE,
+            expected_data_type=prot.RPLidarResponseType.DEVICE_HEALTH,
+        )
 
-            raw_health_data = self._read_exactly(descriptor.data_length, "GET_HEALTH")
+        raw_health_data = self._read_exactly(descriptor.data_length, "GET_HEALTH")
 
-            self._health = prot.parse_get_health_response(raw_health_data)
-
-        except ValueError as exc:
-            self._recover_from_query_transaction_error()
-            raise RPLidarProtocolError(f"Invalid protocol response. {exc}") from exc
-
-        except RPLidarTimeoutError:
-            self._recover_from_query_transaction_error()
-            raise
-
-        except RPLidarConnectionError:
-            self._recover_from_connection_error()
-            raise
+        self._health = prot.parse_get_health_response(raw_health_data)
 
         if self._health.status is prot.RPLidarHealthStatus.ERROR.value:
             self._set_protection_stop_state()
@@ -470,10 +485,12 @@ class RPLidarDriver:
             self._transport.write(request)
 
         except TransportTimeoutError as exc:
-            raise RPLidarTimeoutError(f"Timed out while sending request {command}: {exc}") from exc
+            raise TransportTimeoutError(
+                f"Timed out while sending request {command}: {exc}"
+            ) from exc
 
         except TransportConnectionError as exc:
-            raise RPLidarConnectionError(
+            raise TransportConnectionError(
                 f"Connection failed while sending request {command}: {exc}"
             ) from exc
 
@@ -483,11 +500,11 @@ class RPLidarDriver:
             data = self._transport.read(size)
 
         except TransportTimeoutError as exc:
-            raise RPLidarTimeoutError(
+            raise TransportTimeoutError(
                 f"Timed out while reading {operation} response packet. {exc}"
             ) from exc
         except TransportConnectionError as exc:
-            raise RPLidarConnectionError(
+            raise TransportConnectionError(
                 f"Connection failed while reading {operation} response packet {exc}"
             ) from exc
 
@@ -623,10 +640,7 @@ class RPLidarDriver:
         """
 
         try:
-            self._send_request(prot.RPLidarCommand.STOP)
-            time.sleep(prot.POST_COMMAND_DELAYS[prot.RPLidarCommand.STOP])
-
-            self._synchronize_transport_buffers()
+            self._request_stop()
 
         except ValueError as exc:
             raise RPLidarProtocolError(f"Invalid protocol request. {exc}") from exc
@@ -649,8 +663,9 @@ class RPLidarDriver:
 
         try:
             self._transport.close()
-        except TransportConnectionError:
-            pass
+
+        except TransportConnectionError as exc:
+            raise RPLidarConnectionError(f"Connection recovery failed to close: {exc}")
 
         finally:
             self._transport.clear_internal_buffer()
