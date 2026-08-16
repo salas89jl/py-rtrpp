@@ -112,7 +112,7 @@ def queue_get_info_response(
     firmware_version_minor: int = 0,
     firmware_version_major: int = 0,
     hardware_version: int = 0,
-    serial_number: bytes | None = None
+    serial_number: bytes | None = None,
 ) -> None:
     descriptor = b"\xa5\x5a\x14\x00\x00\x00\x04"
     payload = bytes([model, firmware_version_minor, firmware_version_major, hardware_version])
@@ -122,5 +122,58 @@ def queue_get_info_response(
     else:
         payload += bytes([*range(16)])
 
-
     transport.responses.extend([descriptor, payload])
+
+
+def queue_response_descriptor(
+    transport: FakeTransport, *, response_descriptor: bytes = b""
+) -> None:
+
+    transport.responses.extend([response_descriptor])
+
+
+def queue_single_scan_data_response(
+    transport: FakeTransport,
+    *,
+    start_flag: bytes = b"\x01",
+    quality: int = 0,
+    checkbit: int = 0x01,
+    angle_degrees: float = 90.0,
+    distance_mm: float = 1000.0,
+) -> None:
+    first_byte = ((quality & 0xFF) << 2) | (start_flag[0] & 0x03)
+
+    angle_raw = int(angle_degrees * 64) & 0x3FFF
+    angle_bytes = angle_raw.to_bytes(2, "little")
+
+    # split angle_bytes into two bytes and set the checkbit in the second byte
+    angle_bytes_with_checkbit = bytes([(angle_bytes[0] << 7) | (checkbit & 0x01), angle_bytes[1]])
+
+    distance_raw = int(distance_mm * 4) & 0xFFFF
+    distance_bytes = distance_raw.to_bytes(2, "little")
+
+    payload = bytes([first_byte]) + angle_bytes_with_checkbit + distance_bytes
+
+    transport.responses.append(payload)
+
+
+def queue_multiple_scan_data_responses(
+    transport: FakeTransport,
+    *,
+    num_responses: int = 5,
+    start_flag: bytes = b"\x01",
+    angle_increment: float = 10.0,
+    distance_mm: float = 1000.0,
+):
+    for i in range(num_responses):
+        angle_degrees = angle_increment * i
+        current_distance_mm = distance_mm * i
+
+        queue_single_scan_data_response(
+            transport,
+            start_flag=start_flag if i == 0 else b"\x00",
+            quality=1,
+            checkbit=0x01,
+            angle_degrees=angle_degrees,
+            distance_mm=current_distance_mm,
+        )
