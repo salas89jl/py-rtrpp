@@ -209,7 +209,7 @@ class RPLidarDriver:
         try:
             self._send_request(prot.RPLidarCommand.RESET)
             time.sleep(prot.POST_COMMAND_DELAYS[prot.RPLidarCommand.RESET])
-            
+
             try:
                 self._synchronize_transport_buffers()
             except TransportConnectionError as exc:
@@ -329,18 +329,19 @@ class RPLidarDriver:
             )
 
         except TransportTimeoutError as exc:
+            self._recover_from_stream_error()
             raise RPLidarTimeoutError(
                 f"Timed out while waiting for the SCAN response descriptor. {exc}"
             ) from exc
 
         except TransportConnectionError as exc:
+            self._recover_from_connection_error()
             raise RPLidarConnectionError(
                 f"Communication failed attempted to enter SCAN mode. {exc}"
             ) from exc
 
         except ValueError as exc:
-            self.stop()
-
+            self._recover_from_stream_error()
             raise RPLidarProtocolError(
                 f"SCAN returned an invalid protocol response descriptor. {exc}"
             ) from exc
@@ -352,6 +353,51 @@ class RPLidarDriver:
             raise RPLidarStateError("Cannot iterate measurements when scanning is not active.")
         while self._scanning_state.is_active:
             yield self._read_measurement()
+
+    def read_scan(self) -> list[prot.RPLidarScanData]:
+            """Return one complete revolution, delimited by start flag."""
+            try:
+                # Validate working state before attempting to read a scan.
+                self._require_state(prot.RPLidarWorkingState.SCANNING)
+    
+                # Initialize the list to store one complete revolution of scan data.
+                scan: list[prot.RPLidarScanData] = []
+    
+                # Check if pending measurement from the previous scan exists.
+                if self._pending_measurement is not None:
+                    first = self._pending_measurement
+                    self._pending_measurement = None
+                else:
+                    first = self._wait_for_new_scan()
+    
+                scan.append(first)
+    
+                for measurement in self.iter_measurements():
+                    if measurement.start_flag and scan:
+                        self._pending_measurement = measurement
+                        break
+                    scan.append(measurement)
+                self._scanning_state.completed_scan_count += 1
+    
+                return scan
+    
+            except ValueError as exc:
+                self._recover_from_stream_error()
+                raise RPLidarProtocolError(
+                    f"Invalid protocol response while reading a complete scan. {exc}"
+                ) from exc
+    
+            except TransportTimeoutError as exc:
+                self._recover_from_stream_error()
+                raise RPLidarTimeoutError(
+                    f"Timed out while reading a complete scan. {exc}"
+                ) from exc
+    
+            except TransportConnectionError as exc:
+                self._recover_from_connection_error()
+                raise RPLidarConnectionError(
+                    f"Communication failed while reading a scan. {exc}"
+                ) from exc
 
     # -----------------Private Query Methods-----------------#
 
@@ -493,46 +539,6 @@ class RPLidarDriver:
         except ValueError as exc:
             raise RPLidarProtocolError(
                 f"Invalid protocol response while in {self._scanning_state.mode}. {exc}"
-            ) from exc
-
-    def read_scan(self) -> list[prot.RPLidarScanData]:
-        """Return one complete revolution, delimited by start flag."""
-        try:
-            # Validate working state before attempting to read a scan.
-            self._require_state(prot.RPLidarWorkingState.SCANNING)
-
-            # Initialize the list to store one complete revolution of scan data.
-            scan: list[prot.RPLidarScanData] = []
-
-            # Check if pending measurement from the previous scan exists.
-            if self._pending_measurement is not None:
-                first = self._pending_measurement
-                self._pending_measurement = None
-            else:
-                first = self._wait_for_new_scan()
-
-            scan.append(first)
-
-            for measurement in self.iter_measurements():
-                if measurement.start_flag and scan:
-                    self._pending_measurement = measurement
-                    break
-                scan.append(measurement)
-            self._scanning_state.completed_scan_count += 1
-
-            return scan
-
-        except ValueError as exc:
-            raise RPLidarProtocolError(
-                f"Invalid protocol response while reading a complete scan. {exc}"
-            ) from exc
-
-        except TransportTimeoutError as exc:
-            raise RPLidarTimeoutError(f"Timed out while reading a complete scan. {exc}") from exc
-
-        except TransportConnectionError as exc:
-            raise RPLidarConnectionError(
-                f"Communication failed while reading a scan. {exc}"
             ) from exc
 
     def _wait_for_new_scan(self):
