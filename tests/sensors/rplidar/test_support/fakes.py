@@ -143,11 +143,16 @@ def queue_single_scan_data_response(
 ) -> None:
     first_byte = ((quality & 0xFF) << 2) | (start_flag[0] & 0x03)
 
-    angle_raw = int(angle_degrees * 64) & 0x3FFF
-    angle_bytes = angle_raw.to_bytes(2, "little")
+    angle_raw = int(angle_degrees * 64) 
+    # angle_bytes = angle_raw.to_bytes(2, "little")
+
+    b1, b2 = angle_raw.to_bytes(2, "little")
+
+    angle_bytes = (((b2 << 8) | b1) << 1).to_bytes(2, "little")
+   
 
     # split angle_bytes into two bytes and set the checkbit in the second byte
-    angle_bytes_with_checkbit = bytes([(angle_bytes[0] << 7) | (checkbit & 0x01), angle_bytes[1]])
+    angle_bytes_with_checkbit = bytes([(angle_bytes[0] << 1) | (checkbit & 0x01), angle_bytes[1]])
 
     distance_raw = int(distance_mm * 4) & 0xFFFF
     distance_bytes = distance_raw.to_bytes(2, "little")
@@ -156,24 +161,38 @@ def queue_single_scan_data_response(
 
     transport.responses.append(payload)
 
-
 def queue_multiple_scan_data_responses(
     transport: FakeTransport,
     *,
     num_responses: int = 5,
-    start_flag: bytes = b"\x01",
+    _start_flag: bytes = b"\x01",
     angle_increment: float = 10.0,
-    distance_mm: float = 1000.0,
+    distance_mm: float = 10.0,
 ):
+
     for i in range(num_responses):
+        print(i)
         angle_degrees = angle_increment * i
         current_distance_mm = distance_mm * i
 
+        if angle_degrees > 360: 
+            break
+
         queue_single_scan_data_response(
             transport,
-            start_flag=start_flag if i == 0 else b"\x00",
-            quality=1,
+            start_flag= _start_flag if i == 0 else b"\x02",
+            quality=41,
             checkbit=0x01,
             angle_degrees=angle_degrees,
             distance_mm=current_distance_mm,
+        )
+
+    if _start_flag == b"\x01":
+        queue_single_scan_data_response(
+            transport,
+            start_flag=b"\x01",
+            quality=41,
+            checkbit=0x01,
+            angle_degrees=0.00,
+            distance_mm=0.00,
         )
