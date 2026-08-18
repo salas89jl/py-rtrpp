@@ -553,7 +553,7 @@ Successful resulting state:
     - [ ] RESET is not attempted automatically
 
 Important:
-- `_check_health()` does not automatically transition the driver to `IDLE` when health is `GOOD` or `WARNING`. The caller must explicitly invoke `reset()` to attempt device recovery.
+- `_check_health()` is an internal method used to verify the health status of the RPLIDAR device and update the driver's state accordingly. However, it does not reset the device or attempt to recover from a health error. If the device reports a health status of `ERROR`, the driver transitions to the `PROTECTION_STOP` state and raises a `RPLidarDeviceError`. The caller must explicitly invoke `reset()` to attempt device recovery.
 
 
 ## __Recovery Policy__:
@@ -573,6 +573,10 @@ If the transport is open:
   - [ ] Driver satisfies `IDLE` state invariants
 
 If the transport is closed, or STOP recovery encountered a connection error:
+- [ ] Connection-error recovery is performed
+- [ ] The driver transitions to the `NOT_CONNECTED` state
+
+If the transport is open, but STOP recovery fails with a timeout or protocol error:
 - [ ] Connection-error recovery is performed
 - [ ] The driver transitions to the `NOT_CONNECTED` state
 
