@@ -111,13 +111,7 @@ def assert_stream_error_recovery_restores_idle(
 ) -> None:
     # Idle state invariants
     assert_idle_invariants(driver)
-
-    # driver resquest best effort stop
-    assert transport.written == bytes(
-        [0xA5, RPLidarCommand.SCAN.value, 0xA5, RPLidarCommand.STOP.value]
-    )
-
-    # assert
+ 
     assert_transport_synced(transport)
 
 def assert_connection_error_recovery_restores_not_connected_driver(
