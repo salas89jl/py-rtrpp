@@ -215,7 +215,7 @@ def parse_response_descriptor(packet: bytes) -> RPLidarResponseDescriptor:
 def parse_scan_data(packet: bytes) -> RPLidarScanData:
     """Decodes raw scan data received from the RPLIDAR using SCAN request into structured format."""
     if len(packet) != 5:
-        raise ValueError("SCAN data packet must be exactly 5 bytes.")
+        raise ValueError(f"SCAN data packet must be exactly 5 bytes: received {len(packet)}")
 
     b0, b1, b2, b3, b4 = packet
 
@@ -227,8 +227,9 @@ def parse_scan_data(packet: bytes) -> RPLidarScanData:
             f"Invalid: S Flag: {start_flag} !S Flag: {inverse_start_flag} in scan packet. "
         )
 
-    if (b1 & 0x01) != 1:
-        raise ValueError("Invalid check bit in scan measurement packet. ")
+    check_bit = (b1 & 0x01)
+    if check_bit != 1:
+        raise ValueError(f"Invalid check bit in scan measurement packet. Received {check_bit} ")
 
     quality = b0 >> 2
     angle_q6 = ((b2 << 8) | b1) >> 1
