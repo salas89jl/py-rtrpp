@@ -550,7 +550,6 @@ class RPLidarDriver:
                 self._scanning_state.packet_size,
                 "SCAN measurement",
             )
-
             return prot.parse_scan_data(raw_data)
 
         except ValueError as exc:
@@ -649,6 +648,11 @@ class RPLidarDriver:
             self._recover_from_connection_error()
             raise RPLidarConnectionError(
                 f"Communication failed during stream recovery. {exc}"
+            ) from exc
+        except TransportTimeoutError as exc:
+            self._recover_from_query_transaction_error()
+            raise RPLidarTimeoutError(
+                f"Communication timed out during stream recovery. {exc}"
             ) from exc
 
         self._clear_scanning_state()
