@@ -141,58 +141,53 @@ def queue_single_scan_data_response(
     angle_degrees: float = 90.0,
     distance_mm: float = 1000.0,
 ) -> None:
-    first_byte = ((quality & 0xFF) << 2) | (start_flag[0] & 0x03)
+    quality_with_s_flag = (((quality & 0xFF) << 2) | (start_flag[0] & 0x03)).to_bytes(1, "little")
 
-    angle_raw = int(angle_degrees * 64) 
-    # angle_bytes = angle_raw.to_bytes(2, "little")
+    angle_q6 = int(angle_degrees * 64)
+    angle_with_check_bit = (angle_q6 << 1 | (checkbit & 0x01)).to_bytes(2, "little")
 
-    b1, b2 = angle_raw.to_bytes(2, "little")
+    distance_q2 = int(distance_mm * 4) & 0xFFFF
+    distance_bytes = distance_q2.to_bytes(2, "little")
 
-    angle_bytes = (((b2 << 8) | b1) << 1).to_bytes(2, "little")
-   
-
-    # split angle_bytes into two bytes and set the checkbit in the second byte
-    angle_bytes_with_checkbit = bytes([(angle_bytes[0] << 1) | (checkbit & 0x01), angle_bytes[1]])
-
-    distance_raw = int(distance_mm * 4) & 0xFFFF
-    distance_bytes = distance_raw.to_bytes(2, "little")
-
-    payload = bytes([first_byte]) + angle_bytes_with_checkbit + distance_bytes
+    payload = quality_with_s_flag + angle_with_check_bit + distance_bytes
 
     transport.responses.append(payload)
+
 
 def queue_multiple_scan_data_responses(
     transport: FakeTransport,
     *,
     num_responses: int = 5,
     _start_flag: bytes = b"\x01",
+    _quality: int = 0,
     angle_increment: float = 10.0,
-    distance_mm: float = 10.0,
+    distance_mm_increment: float = 10.0,
+    queue_next_boundary_packet: bool = False
+    
 ):
 
     for i in range(num_responses):
-        print(i)
-        angle_degrees = angle_increment * i
-        current_distance_mm = distance_mm * i
+        angle_degrees = angle_increment * (i + 1)
+        current_distance_mm = distance_mm_increment * (i + 1)
 
-        if angle_degrees > 360: 
+        if angle_degrees > 360:
             break
 
         queue_single_scan_data_response(
             transport,
-            start_flag= _start_flag if i == 0 else b"\x02",
-            quality=41,
+            start_flag=_start_flag if i == 0 else b"\x02",
+            quality=_quality,
             checkbit=0x01,
             angle_degrees=angle_degrees,
             distance_mm=current_distance_mm,
         )
 
-    if _start_flag == b"\x01":
-        queue_single_scan_data_response(
+    if queue_next_boundary_packet is True:
+        queue_single_scan_data_response( # Load next boundary packet with SF = 1
             transport,
-            start_flag=b"\x01",
-            quality=41,
-            checkbit=0x01,
-            angle_degrees=0.00,
-            distance_mm=0.00,
+            start_flag=b"\x01", 
+            quality=30,
+            checkbit=1,
+            angle_degrees=0.0,
+            distance_mm=0.0,
         )
